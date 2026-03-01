@@ -1,3 +1,8 @@
+/**
+ * Pixel Agent Desk Renderer
+ * 캐릭터 애니메이션 및 상태 표시
+ */
+
 const container = document.getElementById('container');
 const speechBubble = document.getElementById('speech-bubble');
 
@@ -25,7 +30,7 @@ const stateConfig = {
 
 // 상태 업데이트
 function updateState(state, message) {
-  console.log(`상태 업데이트: ${state} -> ${stateConfig[state]?.label}`);
+  Logger.debug(`상태 업데이트: ${state} -> ${stateConfig[state]?.label}`);
 
   // 워킹 상태 체크 (UserPromptSubmit, PreToolUse, PostToolUse, Thinking, Working)
   const workingStates = ['UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Thinking', 'Working'];
@@ -36,11 +41,13 @@ function updateState(state, message) {
       startWorkingTimer();
       // 워킹 상태 시작 시 첫 텍스트 설정
       speechBubble.textContent = 'Working...';
+      Logger.debug('워킹 상태 시작');
     }
   } else {
     // 워킹 상태가 끝날 때 최종 시간 저장
     if (isWorkingState && workingStartTime) {
       finalWorkingTime = Math.floor((Date.now() - workingStartTime) / 1000);
+      Logger.debug(`워킹 완료: ${finalWorkingTime}초`);
     }
     stopWorkingTimer();
     workingStartTime = null;
@@ -53,17 +60,20 @@ function updateState(state, message) {
   // 새로운 상태 클래스 추가
   const config = stateConfig[state] || stateConfig['Complete'];
   container.classList.add(config.class);
+  Logger.debug(`클래스 변경: ${config.class}`);
 
   // Done 상태일 때 최종 시간 표시
   if (state === 'Stop' || state === 'Complete') {
     if (finalWorkingTime && finalWorkingTime > 0) {
       speechBubble.textContent = `Done! (${formatWorkingTime(finalWorkingTime)})`;
+      Logger.info('최종 워킹 시간:', finalWorkingTime);
     } else {
       speechBubble.textContent = 'Done!';
     }
   } else if (!isWorkingState) {
     // 워킹 상태가 아닌 다른 상태일 때
     speechBubble.textContent = config.label;
+    Logger.debug(`라벨 표시: ${config.label}`);
   }
 }
 
@@ -73,9 +83,11 @@ function startWorkingTimer() {
     if (workingStartTime && isWorkingState) {
       const elapsed = Date.now() - workingStartTime;
       const seconds = Math.floor(elapsed / 1000);
-      speechBubble.textContent = `Working... ${formatWorkingTime(seconds)}`;
+      const timeText = formatWorkingTime(seconds);
+      speechBubble.textContent = `Working... ${timeText}`;
     }
   }, 1000);
+  Logger.debug('타이머 시작');
 }
 
 // 워킹 타이머 중지
@@ -83,6 +95,7 @@ function stopWorkingTimer() {
   if (workingTimer) {
     clearInterval(workingTimer);
     workingTimer = null;
+    Logger.debug('타이머 중지');
   }
 }
 
@@ -117,3 +130,51 @@ document.addEventListener('visibilitychange', () => {
     document.body.classList.remove('paused');
   }
 });
+
+/**
+ * 콘솔 로깅 및 에러 처리
+ */
+const Logger = {
+  debug: (...args) => console.log('[DEBUG]', ...args),
+  error: (...args) => console.error('[ERROR]', ...args),
+  warn: (...args) => console.warn('[WARN]', ...args)
+};
+
+// 요소 유효성 검사
+function validateElement(element, name) {
+  if (!element) {
+    Logger.error(`${name} 요소를 찾을 수 없습니다!`);
+    return false;
+  }
+  return true;
+}
+
+// 콘솔 로그: 에러 확인용
+const characterElement = document.getElementById('character');
+Logger.debug('Renderer.js 로드됨');
+Logger.debug('speechBubble 요소:', speechBubble);
+Logger.debug('character 요소:', characterElement);
+Logger.debug('container 요소:', container);
+
+if (!validateElement(speechBubble, 'speechBubble')) {
+  if (!validateElement(characterElement, 'character')) {
+    // 캐릭터 요소가 없으면 에러
+  }
+}
+
+// 말풍선 클릭 시 터미널 포커스 요청
+if (speechBubble) {
+  speechBubble.addEventListener('click', () => {
+    if (window.electronAPI) {
+      console.log('[DEBUG] 말풍선 클릭 - 터미널 포커스 요청');
+      window.electronAPI.focusTerminal();
+    }
+  });
+} else {
+  console.error('[ERROR] speechBubble 요소를 찾을 수 없습니다!');
+}
+
+// 말풍선 클릭 가능하도록 스타일
+if (speechBubble) {
+  speechBubble.style.cursor = 'pointer';
+}

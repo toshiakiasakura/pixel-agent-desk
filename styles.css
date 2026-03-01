@@ -35,172 +35,111 @@ body {
   height: 64px;
   position: relative;
   display: block;
+  overflow: hidden;
 
   /* 스프라이트 시트 설정 */
   background-image: url('avatar_00.png');
-  background-size: 432px 256px;
+  background-size: 100%;
   background-repeat: no-repeat;
 
   /* 픽셀 아트 렌더링 설정 */
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-
-  /* 렌더링 위치를 정수로 고정 */
-  transform: translateZ(0);
+  image-rendering: -webkit-optimize-contrast;
 
   /* 여백 완전 제거 */
   line-height: 0;
   font-size: 0;
 
-  overflow: hidden;
-  /* 프레임 밖으로 나가는 이미지 차단 */
+  /* 렌더링 최적화 */
+  will-change: background-position;
+  transform: translate3d(0, 0, 0);
 }
 
 /* 스프라이트 프레임 애니메이션 */
 /* 프레임 계산: x = -((n % 9) * 48), y = -(Math.floor(n / 9) * 64) */
 
+/* Thinking: 프레임 0,1,2 순서대로 */
 @keyframes sprite-thinking {
-  0% {
-    background-position: 0px 0px;
-  }
-
-  33.33% {
-    background-position: -48px 0px;
-  }
-
-  66.66% {
-    background-position: -96px 0px;
-  }
-
-  100% {
-    background-position: 0px 0px;
-  }
+  from { background-position: 0px 0px; }
+  to { background-position: -96px 0px; }
 }
 
+/* Working: 프레임 3,4 순서대로 */
 @keyframes sprite-working {
-  0% {
-    background-position: -144px 0px;
-  }
-
-  50% {
-    background-position: -192px 0px;
-  }
-
-  100% {
-    background-position: -144px 0px;
-  }
+  from { background-position: -144px 0px; }
+  to { background-position: -192px 0px; }
 }
 
+/* Error: 프레임 5,6,7 순서대로 */
 @keyframes sprite-error {
-  0% {
-    background-position: -240px 0px;
-  }
-
-  33.33% {
-    background-position: -288px 0px;
-  }
-
-  66.66% {
-    background-position: -336px 0px;
-  }
-
-  100% {
-    background-position: -240px 0px;
-  }
+  from { background-position: -240px 0px; }
+  to { background-position: -336px 0px; }
 }
 
+/* Alert: 프레임 8,9 순서대로 */
 @keyframes sprite-alert {
-  0% {
-    background-position: -384px 0px;
-  }
-
-  50% {
-    background-position: 0px -64px;
-  }
-
-  100% {
-    background-position: -384px 0px;
-  }
+  from { background-position: -384px 0px; }
+  to { background-position: 0px -64px; }
 }
 
+/* Complete: 프레임 10,11,12 순서대로 */
 @keyframes sprite-complete {
-  0% {
-    background-position: -48px -64px;
-  }
-
-  33.33% {
-    background-position: -96px -64px;
-  }
-
-  66.66% {
-    background-position: -144px -64px;
-  }
-
-  100% {
-    background-position: -48px -64px;
-  }
+  from { background-position: -48px -64px; }
+  to { background-position: -144px -64px; }
 }
 
+/* Start: 프레임 13,14 순서대로 */
 @keyframes sprite-start {
-  0% {
-    background-position: -192px -64px;
-  }
-
-  100% {
-    background-position: -240px -64px;
-  }
+  from { background-position: -192px -64px; }
+  to { background-position: -240px -64px; }
 }
 
+/* Idle: 프레임 15,16,17 순서대로 */
 @keyframes sprite-idle {
-  0% {
-    background-position: -288px -64px;
-  }
-
-  33.33% {
-    background-position: -336px -64px;
-  }
-
-  66.66% {
-    background-position: 0px -128px;
-  }
-
-  100% {
-    background-position: -288px -64px;
-  }
+  from { background-position: -288px -64px; }
+  to { background-position: 0px -128px; }
 }
 
-/* 상태별 애니메이션 적용 */
+/* 상태별 애니메이션 적용 (애니메이션 일시 disable) */
 .state-start .character {
-  animation: sprite-start 1s ease-out;
+  /* animation: sprite-start 0.5s steps(2) forwards; */
+  background-position: -240px -64px; /* 고정 프레임 */
 }
 
 .state-thinking .character,
 .state-UserPromptSubmit .character,
 .state-PostToolUse .character {
-  animation: sprite-working 0.5s steps(2) infinite;
+  /* animation: sprite-thinking 1s steps(3) infinite; */
+  background-position: 0 0; /* 고정 프레임 */
 }
 
 .state-working .character,
 .state-PreToolUse .character {
-  animation: sprite-working 0.5s steps(2) infinite;
+  /* animation: sprite-working 0.3s steps(2) infinite; */
+  background-position: -144px 0; /* 고정 프레임 */
 }
 
 .state-error .character {
-  animation: sprite-error 0.4s steps(4) infinite;
+  /* animation: sprite-error 0.8s steps(3) infinite; */
+  background-position: -240px 0; /* 고정 프레임 */
 }
 
 .state-alert .character,
 .state-Notification .character {
-  animation: sprite-alert 0.2s steps(2) infinite;
+  /* animation: sprite-alert 0.3s steps(2) infinite; */
+  background-position: -384px 0; /* 고정 프레임 */
 }
 
 .state-complete .character,
 .state-Stop .character {
-  animation: sprite-complete 1s steps(2) infinite;
+  /* animation: sprite-complete 0.8s steps(3) infinite; */
+  background-position: -48px -64px; /* 고정 프레임 */
 }
 
 .state-Idle .character {
-  animation: sprite-idle 2s steps(2) infinite;
+  /* animation: sprite-idle 1.5s steps(3) infinite; */
+  background-position: -288px -64px; /* 고정 프레임 */
 }
 
 /* 백그라운드에서 애니메이션 일시 정지 */
@@ -226,7 +165,6 @@ body {
   word-wrap: break-word;
   z-index: 100;
   transform-origin: bottom center;
-  transition: all 0.2s ease-out;
 }
 
 /* 바운스 애니메이션 제거 */

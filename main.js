@@ -22,7 +22,7 @@ function createWindow() {
     skipTaskbar: true,
     resizable: false,
     movable: true,
-    focusable: false,
+    focusable: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -170,4 +170,10 @@ ipcMain.on('constrain-window', (event, bounds) => {
 ipcMain.on('get-state', (event) => {
   const state = server.getAgentStates();
   event.reply('state-response', state);
+});
+
+// 터미널 포커스 요청 (현재는 콘솔 로그만 출력)
+ipcMain.on('focus-terminal', (event) => {
+  console.log('터미널 포커스 요청');
+  // TODO: 실제 터미널 창 포커스 기능 구현 (Windows API 필요)
 });

@@ -18,5 +18,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   constrainWindow: (bounds) => {
     ipcRenderer.send('constrain-window', bounds);
+  },
+  focusTerminal: () => {
+    ipcRenderer.send('focus-terminal');
   }
 });
