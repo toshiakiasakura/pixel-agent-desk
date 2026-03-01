@@ -1,6 +1,10 @@
 const container = document.getElementById('container');
 const speechBubble = document.getElementById('speech-bubble');
 
+// 워킹 시간 관련 변수
+let workingStartTime = null;
+let workingTimer = null;
+
 // 상태 설정 통합 (클래스 + 라벨)
 const stateConfig = {
   'Start': { class: 'state-start', label: 'Starting...' },
@@ -21,6 +25,18 @@ const stateConfig = {
 function updateState(state, message) {
   console.log(`상태 업데이트: ${state} -> ${stateConfig[state]?.label}`);
 
+  // 워킹 상태 체크 (UserPromptSubmit, PreToolUse, PostToolUse, Thinking, Working)
+  const workingStates = ['UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Thinking', 'Working'];
+  if (workingStates.includes(state)) {
+    if (!workingStartTime) {
+      workingStartTime = Date.now();
+      startWorkingTimer();
+    }
+  } else {
+    stopWorkingTimer();
+    workingStartTime = null;
+  }
+
   // 이전 상태 클래스 제거
   container.className = 'container';
 
@@ -28,8 +44,40 @@ function updateState(state, message) {
   const config = stateConfig[state] || stateConfig['Complete'];
   container.classList.add(config.class);
 
-  // 말풍선 업데이트 (상태 라벨만 표시)
-  speechBubble.textContent = config.label;
+  // 말풍선 업데이트
+  speechBubble.textContent = message || config.label;
+}
+
+// 워킹 타이머 시작
+function startWorkingTimer() {
+  workingTimer = setInterval(() => {
+    if (workingStartTime) {
+      const elapsed = Date.now() - workingStartTime;
+      const seconds = Math.floor(elapsed / 1000);
+      speechBubble.textContent = formatWorkingTime(seconds);
+    }
+  }, 1000);
+}
+
+// 워킹 타이머 중지
+function stopWorkingTimer() {
+  if (workingTimer) {
+    clearInterval(workingTimer);
+    workingTimer = null;
+  }
+}
+
+// 워킹 시간 포맷팅
+function formatWorkingTime(seconds) {
+  if (seconds < 10) {
+    return `Working... ${seconds}초`;
+  } else if (seconds < 60) {
+    return `Working... ${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+  } else {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `Working... ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
 }
 
 // IPC로 상태 업데이트 수신

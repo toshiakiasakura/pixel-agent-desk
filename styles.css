@@ -46,55 +46,121 @@ body {
 
   /* 렌더링 위치를 정수로 고정 */
   transform: translateZ(0);
-  overflow: hidden; /* 프레임 밖으로 나가는 이미지 차단 */
+  overflow: hidden;
+  /* 프레임 밖으로 나가는 이미지 차단 */
 }
 
 /* 스프라이트 프레임 애니메이션 */
 /* 프레임 계산: x = -((n % 9) * 48), y = -(Math.floor(n / 9) * 64) */
 
 @keyframes sprite-thinking {
-  0% { background-position: 0 0; }
-  33.33% { background-position: -48px 0; }
-  66.66% { background-position: -96px 0; }
-  100% { background-position: 0 0; }
+  0% {
+    background-position: 0 0;
+  }
+
+  33.33% {
+    background-position: -48px 0;
+  }
+
+  66.66% {
+    background-position: -96px 0;
+  }
+
+  100% {
+    background-position: 0 0;
+  }
 }
 
 @keyframes sprite-working {
-  0% { background-position: -144px 0; }
-  50% { background-position: -192px 0; }
-  100% { background-position: -144px 0; }
+  0% {
+    background-position: -144px 0;
+  }
+
+  50% {
+    background-position: -192px 0;
+  }
+
+  100% {
+    background-position: -144px 0;
+  }
 }
 
 @keyframes sprite-error {
-  0% { background-position: -240px 0; }
-  33.33% { background-position: -288px 0; }
-  66.66% { background-position: -336px 0; }
-  100% { background-position: -240px 0; }
+  0% {
+    background-position: -240px 0;
+  }
+
+  33.33% {
+    background-position: -288px 0;
+  }
+
+  66.66% {
+    background-position: -336px 0;
+  }
+
+  100% {
+    background-position: -240px 0;
+  }
 }
 
 @keyframes sprite-alert {
-  0% { background-position: -384px 0; }
-  50% { background-position: 0 -64px; }
-  100% { background-position: -384px 0; }
+  0% {
+    background-position: -384px 0;
+  }
+
+  50% {
+    background-position: 0 -64px;
+  }
+
+  100% {
+    background-position: -384px 0;
+  }
 }
 
 @keyframes sprite-complete {
-  0% { background-position: -48px -64px; }
-  33.33% { background-position: -96px -64px; }
-  66.66% { background-position: -144px -64px; }
-  100% { background-position: -48px -64px; }
+  0% {
+    background-position: -48px -64px;
+  }
+
+  33.33% {
+    background-position: -96px -64px;
+  }
+
+  66.66% {
+    background-position: -144px -64px;
+  }
+
+  100% {
+    background-position: -48px -64px;
+  }
 }
 
 @keyframes sprite-start {
-  0% { background-position: -192px -64px; }
-  100% { background-position: -240px -64px; }
+  0% {
+    background-position: -192px -64px;
+  }
+
+  100% {
+    background-position: -240px -64px;
+  }
 }
 
 @keyframes sprite-idle {
-  0% { background-position: -288px -64px; }
-  33.33% { background-position: -336px -64px; }
-  66.66% { background-position: 0 -128px; }
-  100% { background-position: -288px -64px; }
+  0% {
+    background-position: -288px -64px;
+  }
+
+  33.33% {
+    background-position: -336px -64px;
+  }
+
+  66.66% {
+    background-position: 0 -128px;
+  }
+
+  100% {
+    background-position: -288px -64px;
+  }
 }
 
 /* 상태별 애니메이션 적용 */
@@ -155,6 +221,22 @@ body {
   z-index: 100;
   transform-origin: bottom center;
   transition: all 0.2s ease-out;
+}
+
+/* 천천히 바운스 애니메이션 */
+@keyframes slow-bounce {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-8px);
+  }
+}
+
+/* Done 상태일 때 말풍선 바운스 */
+.state-complete .speech-bubble,
+.state-Stop .speech-bubble {
+  animation: slow-bounce 1.5s ease-in-out infinite;
 }
 
 .speech-bubble::before {
