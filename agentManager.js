@@ -75,6 +75,7 @@ class AgentManager extends EventEmitter {
       displayName: this.formatDisplayName(entry.slug, entry.projectPath),
       projectPath: entry.projectPath,
       jsonlPath: entry.jsonlPath || (existingAgent ? existingAgent.jsonlPath : null),
+      isSubagent: entry.isSubagent || (existingAgent ? existingAgent.isSubagent : false),
       state: newState,
       activeStartTime,
       lastDuration,

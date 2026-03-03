@@ -186,6 +186,11 @@ function createAgentCard(agent) {
   card.className = 'agent-card';
   card.dataset.agentId = agent.id;
 
+  // 서브에이전트 표시
+  if (agent.isSubagent) {
+    card.classList.add('is-subagent');
+  }
+
   // Create bubble
   const bubble = document.createElement('div');
   bubble.className = 'agent-bubble';
@@ -206,6 +211,14 @@ function createAgentCard(agent) {
       window.electronAPI.dismissAgent(agent.id);
     }
   };
+
+  // 서브에이전트 배지
+  if (agent.isSubagent) {
+    const badge = document.createElement('div');
+    badge.className = 'agent-sub-badge';
+    badge.textContent = 'Sub';
+    card.appendChild(badge);
+  }
 
   // Assemble card
   card.appendChild(bubble);
@@ -272,13 +285,40 @@ function cleanupAgents(data) {
   console.log(`[Renderer] Cleaned up ${data.count} agents`);
 }
 
+// --- 빈 상태(에이전트 0개) 대기 아바타 ---
+const idleContainer = document.getElementById('container');
+const idleCharacter = document.getElementById('character');
+const idleBubble = document.getElementById('speech-bubble');
+let idleAnimInterval = null;
+
+function startIdleAnimation() {
+  if (!idleCharacter) return;
+  const seq = ANIM_SEQUENCES.waiting; // frame 32
+  drawFrameOn(idleCharacter, seq.frames[0]);
+  idleBubble.textContent = 'Waiting...';
+}
+
+function drawFrameOn(el, frameIndex) {
+  if (!el) return;
+  const col = frameIndex % SHEET.cols;
+  const row = Math.floor(frameIndex / SHEET.cols);
+  el.style.backgroundPosition = `${col * -SHEET.width}px ${row * -SHEET.height}px`;
+}
+
 function updateGridLayout() {
   const agentCount = document.querySelectorAll('.agent-card').length;
 
-  if (agentCount > 1) {
+  if (agentCount >= 1) {
+    // 에이전트 있음: 카드 모드, 빈 컨테이너 숨김
     agentGrid.classList.add('has-multiple');
+    if (idleContainer) idleContainer.style.display = 'none';
   } else {
+    // 에이전트 없음: 빈 컨테이너 대기 상태로 표시
     agentGrid.classList.remove('has-multiple');
+    if (idleContainer) {
+      idleContainer.style.display = 'flex';
+      startIdleAnimation();
+    }
   }
 }
 
@@ -288,6 +328,12 @@ async function init() {
   if (!window.electronAPI) {
     console.error('[Renderer] electronAPI not available');
     return;
+  }
+
+  // 로드 전 즉시 대기 아바타 표시
+  if (idleContainer) {
+    idleContainer.style.display = 'flex';
+    startIdleAnimation();
   }
 
   // Register event listeners
@@ -303,7 +349,7 @@ async function init() {
     for (const agent of agents) {
       addAgent(agent);
     }
-    updateGridLayout();
+    updateGridLayout(); // 에이전트 수에 따라 컨테이너/카드 전환
   } catch (err) {
     console.error('[Renderer] Failed to load agents:', err);
   }

@@ -4,7 +4,6 @@ const os = require('os');
 const fs = require('fs');
 const LogMonitor = require('./logMonitor');
 const AgentManager = require('./agentManager');
-const ProcessWatcher = require('./processWatcher');
 
 // Debug logging to file
 const debugLog = (msg) => {
@@ -17,7 +16,6 @@ const debugLog = (msg) => {
 let mainWindow;
 let logMonitor = null;
 let agentManager = null;
-const processWatcher = new ProcessWatcher();
 
 // =====================================================
 // 에이전트 수에 따른 동적 윈도우 크기 (P1-6)
@@ -215,12 +213,6 @@ ipcMain.on('constrain-window', (event, bounds) => {
 
 ipcMain.on('get-all-agents', (event) => event.reply('all-agents-response', agentManager?.getAllAgents() ?? []));
 ipcMain.on('get-agent-stats', (event) => event.reply('agent-stats-response', agentManager?.getStats() ?? {}));
-
-// 터미널 포커스 IPC 핸들러
-ipcMain.on('focus-terminal', (event, projectPath) => {
-  console.log('[Main] focus-terminal:', projectPath);
-  processWatcher.focusTerminal(projectPath);
-});
 
 // 에이전트 수동 퇴근 IPC 핸들러
 ipcMain.on('dismiss-agent', (event, agentId) => {

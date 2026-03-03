@@ -10,13 +10,11 @@ const path = require('path');
 const os = require('os');
 const JsonlParser = require('./jsonlParser');
 const AgentManager = require('./agentManager');
-const ProcessWatcher = require('./processWatcher');
 
 class LogMonitor {
   constructor(agentManager = null) {
     this.parser = new JsonlParser();
     this.agentManager = agentManager || new AgentManager();
-    this.processWatcher = new ProcessWatcher();
     this.watchedFiles = new Map(); // filePath -> { watcher, lastSize, pendingBuffer }
     this.scanIntervalHandle = null;
     this.scanInterval = 5000; // Scan for NEW files every 5 seconds
@@ -58,6 +56,7 @@ class LogMonitor {
   async initialReadAndWatch(fileInfo) {
     const filePath = fileInfo.path;
     const projectPath = fileInfo.project;
+    const isSubagent = !!fileInfo.subagent;
     const RECENT_MS = 30 * 60 * 1000;
     const cutoff = Date.now() - RECENT_MS;
 
@@ -90,6 +89,7 @@ class LogMonitor {
           textContent,
           projectPath,
           jsonlPath: filePath,
+          isSubagent,
           startTime: fileInfo.mtime ? new Date(fileInfo.mtime) : new Date()
         });
       }
