@@ -297,6 +297,125 @@ function startHookServer() {
     debugLog(`[Hook] HTTP hook server listening on port ${HOOK_SERVER_PORT}`);
   });
 }
+// =====================================================
+// 앱 재시작 시 기존 활성 세션 복구 (1회 실행)
+// ~/.claude/projects/ 하위 최근 30분 내 JSONL 스캔
+// =====================================================
+function recoverExistingSessions() {
+  if (!agentManager) return;
+  const projectsDir = path.join(os.homedir(), '.claude', 'projects');
+  if (!fs.existsSync(projectsDir)) return;
+
+  const RECENT_MS = 30 * 60 * 1000;
+  const cutoff = Date.now() - RECENT_MS;
+  let recovered = 0;
+
+  try {
+    for (const projectEntry of fs.readdirSync(projectsDir, { withFileTypes: true })) {
+      if (!projectEntry.isDirectory()) continue;
+      const projectPath = path.join(projectsDir, projectEntry.name);
+
+      for (const file of fs.readdirSync(projectPath)) {
+        if (!file.endsWith('.jsonl')) continue;
+        const filePath = path.join(projectPath, file);
+
+        try {
+          const stat = fs.statSync(filePath);
+          if (stat.mtimeMs < cutoff) continue; // 30분 이상 지난 파일 제외
+
+          // 파일 끝 4KB만 읽어 최근 라인 확인
+          const fileSize = stat.size;
+          const readSize = Math.min(fileSize, 4096);
+          const buf = Buffer.alloc(readSize);
+          const fd = fs.openSync(filePath, 'r');
+          fs.readSync(fd, buf, 0, readSize, fileSize - readSize);
+          fs.closeSync(fd);
+
+          const lines = buf.toString('utf-8').split('\n').filter(l => l.trim());
+
+          let sessionId = null;
+          let cwd = '';
+          let hasSessionEnd = false;
+
+          for (const line of lines) {
+            try {
+              const obj = JSON.parse(line);
+              if (obj.sessionId) sessionId = obj.sessionId;
+              if (obj.cwd) cwd = obj.cwd;
+              if (obj.subtype === 'SessionEnd') hasSessionEnd = true;
+            } catch (e) { }
+          }
+
+          if (!sessionId || hasSessionEnd) continue;
+          if (agentManager.getAgent(sessionId)) continue; // 이미 등록됨
+
+          // 등록
+          const displayName = cwd ? path.basename(cwd) : path.basename(projectPath);
+          agentManager.updateAgent({ sessionId, projectPath: cwd, displayName, state: 'Waiting', jsonlPath: filePath }, 'recover');
+          debugLog(`[Recover] Restored: ${sessionId.slice(0, 8)} (${displayName})`);
+          recovered++;
+        } catch (e) { }
+      }
+    }
+    debugLog(`[Recover] Done — ${recovered} session(s) restored`);
+  } catch (e) {
+    debugLog(`[Recover] Error: ${e.message}`);
+  }
+}
+
+// =====================================================
+// 생사 확인: claude 프로세스 수 vs 에이전트 수 비교
+// 죽은 에이전트 감지 및 제거 (15초 간격)
+// =====================================================
+function startLivenessChecker() {
+  const { execFile } = require('child_process');
+  const INTERVAL = 15000;
+  const GRACE_MS = 20000; // 등록 후 20초는 제외
+  const MAX_MISS = 2;     // 2회 연속 초과 → DEAD
+  const missCount = new Map();
+
+  const psCmd = `Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '*claude*cli.js*' } | Measure-Object | Select-Object -ExpandProperty Count`;
+
+  setInterval(() => {
+    if (!agentManager) return;
+    const agents = agentManager.getAllAgents();
+    if (agents.length === 0) { missCount.clear(); return; }
+
+    execFile('powershell.exe', ['-NoProfile', '-Command', psCmd], { timeout: 8000 }, (err, stdout) => {
+      if (err) return;
+      const liveCount = parseInt(stdout.trim(), 10) || 0;
+
+      const checkable = agents.filter(a =>
+        !a.firstSeen || Date.now() - a.firstSeen >= GRACE_MS
+      );
+      if (checkable.length === 0) return;
+
+      if (liveCount >= checkable.length) {
+        for (const a of checkable) missCount.delete(a.id);
+        return;
+      }
+
+      // 초과분 — lastActivity 오름차순(오래된 것 먼저 suspect)
+      const excess = checkable.length - liveCount;
+      const sorted = [...checkable].sort((a, b) =>
+        (a.lastActivity || 0) - (b.lastActivity || 0)
+      );
+      for (const a of sorted.slice(excess)) missCount.delete(a.id);
+      for (const a of sorted.slice(0, excess)) {
+        const n = (missCount.get(a.id) || 0) + 1;
+        missCount.set(a.id, n);
+        if (n < MAX_MISS) {
+          debugLog(`[Live] ${a.id.slice(0, 8)} suspect ${n}/${MAX_MISS}`);
+        } else {
+          debugLog(`[Live] ${a.id.slice(0, 8)} DEAD — removing`);
+          missCount.delete(a.id);
+          agentManager.removeAgent(a.id);
+        }
+      }
+    });
+  }, INTERVAL);
+}
+
 
 function handleSessionStart(sessionId, cwd) {
   if (!agentManager) {
@@ -341,8 +460,9 @@ function handleSessionEnd(sessionId) {
 
 app.whenReady().then(() => {
   debugLog('Pixel Agent Desk started');
-  startHookServer();    // HTTP 훅 서버
-  setupClaudeHooks();   // settings.json 훅 자동 등록
+  startHookServer();       // HTTP 훅 서버
+  setupClaudeHooks();      // settings.json 훅 자동 등록
+  startLivenessChecker();  // 죽기적 생사 확인 (15초)
   createWindow();
 
 
@@ -387,7 +507,10 @@ app.whenReady().then(() => {
       }
     });
 
-    logMonitor = null; // 레거시 제거 (no-op)
+    logMonitor = null; // 레거시 (no-op)
+
+    // 앱 재시작 시 기존 활성 세션 복구 (1회)
+    recoverExistingSessions();
 
     // 좌비 에이전트 방지: lastActivity 기준 30분 미활성 시 제거
     const INACTIVE_MS = 30 * 60 * 1000;
