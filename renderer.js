@@ -237,6 +237,12 @@ function createAgentCard(agent) {
   nameBadge.textContent = agent.displayName || typeLabel;
   nameBadge.title = agent.displayName; // 긴 이름일 경우 기본 툴팁
 
+  // 만약 위 프로젝트 태그(폴더명)와 직책명(displayName)이 완전히 똑같거나 'Agent' 기본값이면 하단 배지를 숨김
+  const projectNameStr = agent.projectPath ? agent.projectPath.split(/[\\/]/).pop() : 'Default';
+  if (!agent.displayName || agent.displayName === projectNameStr || agent.displayName === 'Agent') {
+    nameBadge.style.display = 'none';
+  }
+
   // Assemble card
   card.appendChild(header);
   card.appendChild(bubble);

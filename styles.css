@@ -189,28 +189,34 @@ body {
 
 .type-tag {
   font-family: 'Pretendard Variable', sans-serif;
-  font-size: 7px;
+  font-size: 8.5px;
+  /* 기존 7px에서 확대 */
   font-weight: 900;
   text-transform: uppercase;
-  padding: 0px 4px;
-  border-radius: 3px;
+  padding: 2px 6px;
+  /* 패딩 넓혀서 배경 도드라지게 */
+  border-radius: 4px;
+  /* 라운드 처리 */
   letter-spacing: 0.05em;
+  color: white;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+  /* 글씨 그림자 추가 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  /* 박스 그림자 추가 */
+  margin-top: 1px;
 }
 
-/* 타입별 스타일 */
+/* 타입별 스타일 - 색상은 유지하되 위 공통 스타일에 의해 더 돋보임 */
 .type-main .type-tag {
   background: #E91E63;
-  color: white;
 }
 
 .type-sub .type-tag {
   background: #9C27B0;
-  color: white;
 }
 
 .type-team .type-tag {
   background: #2196F3;
-  color: white;
 }
 
 /* 타입별 카드 하이라이트 (선택사항: 외곽선으로 구분) */
