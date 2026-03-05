@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return new Promise(resolve => ipcRenderer.once('work-area-response', (_, d) => resolve(d)));
   },
   constrainWindow: (bounds) => ipcRenderer.send('constrain-window', bounds),
+  resizeWindow: (size) => ipcRenderer.send('resize-window', size),
   rendererReady: () => ipcRenderer.send('renderer-ready'),
 
   // 에이전트 이벤트
@@ -38,5 +39,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   focusTerminal: (agentId) => ipcRenderer.send('focus-terminal', agentId),
 
   // 에이전트 수동 퇴근 (X 버튼 클릭 시)
-  dismissAgent: (agentId) => ipcRenderer.send('dismiss-agent', agentId)
+  dismissAgent: (agentId) => ipcRenderer.send('dismiss-agent', agentId),
+
+  // Mission Control Dashboard methods
+  openWebDashboard: () => ipcRenderer.invoke('open-web-dashboard'),
+  closeWebDashboard: () => ipcRenderer.invoke('close-web-dashboard'),
+  isWebDashboardOpen: () => ipcRenderer.invoke('is-web-dashboard-open')
 });

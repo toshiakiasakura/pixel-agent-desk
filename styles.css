@@ -35,6 +35,17 @@ body {
   padding: 10px;
 }
 
+.agent-grid.has-multiple {
+  display: grid;
+  grid-template-columns: repeat(10, 90px);
+  grid-auto-rows: auto;
+  gap: 10px 10px;
+  justify-content: center;
+  align-items: end;
+  /* Characters align exactly at the bottom of the grid row */
+  padding: 10px;
+}
+
 /* ════════════════════════════════════════
    Single Agent Mode
 ════════════════════════════════════════ */
@@ -592,37 +603,57 @@ body {
 /* ════════════════════════════════════════
    Agent Party Layout (Main + Sub/Team row layout)
 ════════════════════════════════════════ */
-/* 파티(메인+서브/팀) 그룹단위 래퍼 */
-.agent-party {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 5px;
-  padding: 15px 15px 5px 15px;
+/* 파티(메인+서브/팀) 그룹단위 래퍼 (배경용 격자 박스) */
+.agent-party-bg {
   background-color: rgba(0, 0, 0, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  z-index: -1;
+  margin: -5px -2px -2px -2px;
+  /* 카드를 약간 감싸도록 마진 조정 */
+  pointer-events: none;
 }
 
-.agent-party-main {
-  display: flex;
-  margin-bottom: 15px;
-  /* main과 sub 사이 여백 */
-  justify-content: center;
+/* ════════════════════════════════════════
+   Web Dashboard Button (Mission Control)
+═════════════════════════════════════════ */
+.web-dashboard-btn {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: 'Pretendard Variable', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+  text-align: center;
+  line-height: 1.4;
+  min-width: 100px;
 }
 
-.agent-party-subs {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  gap: 15px;
+.web-dashboard-btn:hover {
+  background: rgba(33, 150, 243, 0.85);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-/* 솔로 메인 래퍼 */
-.agent-solo {
-  display: inline-flex;
-  flex-direction: column;
-  margin: 5px;
-  padding: 5px;
+.web-dashboard-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.web-dashboard-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }

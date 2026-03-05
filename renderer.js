@@ -425,6 +425,10 @@ function updateGridLayout() {
   let lastProject = null;
   let mainIndex = 0;
 
+  let col = 1;
+  let currentRow = 1;
+  let maxRowInBatch = 1;
+
   mains.forEach(mainItem => {
     const proj = mainItem.data.projectPath;
     if (lastProject !== null && proj !== lastProject) {
@@ -446,62 +450,132 @@ function updateGridLayout() {
     }
     mainIndex++;
 
-    // 서브에이전트 찾기
     const mySubs = [];
     for (let i = fallbackSubList.length - 1; i >= 0; i--) {
       const sub = fallbackSubList[i];
-      // parentId가 일치하거나 (확실), 아직 parentId가 없지만 같은 프로젝트인 경우
       if (sub.data.parentId === mainItem.data.id || (!sub.data.parentId && sub.data.projectPath === proj)) {
         mySubs.push(sub);
         fallbackSubList.splice(i, 1);
       }
     }
 
-    mySubs.reverse(); // 탐색 순서 복구
+    mySubs.reverse();
 
-    if (mySubs.length > 0) {
-      const partyDiv = document.createElement('div');
-      partyDiv.className = 'agent-party';
-
-      const mainRow = document.createElement('div');
-      mainRow.className = 'agent-party-main';
-      mainRow.appendChild(mainItem.card);
-      partyDiv.appendChild(mainRow);
-
-      const subRow = document.createElement('div');
-      subRow.className = 'agent-party-subs';
-      mySubs.forEach(s => {
-        // 원래 이름 복구
-        if (s.card) {
-          s.card.classList.remove('group-start');
-        }
-        subRow.appendChild(s.card);
-      });
-      partyDiv.appendChild(subRow);
-
-      agentGrid.appendChild(partyDiv);
-    } else {
-      const soloDiv = document.createElement('div');
-      soloDiv.className = 'agent-solo';
-      mainItem.card.classList.remove('group-start');
-      soloDiv.appendChild(mainItem.card);
-      agentGrid.appendChild(soloDiv);
+    // 가로가 10개를 초과하면 줄바꿈
+    if (col > 10) {
+      col = 1;
+      currentRow = maxRowInBatch + 1;
+      maxRowInBatch = currentRow;
     }
+
+    // 그룹 배경을 위한 빈 박스
+    const bgBox = document.createElement('div');
+    bgBox.className = 'agent-party-bg';
+    bgBox.style.gridColumn = col;
+    // 메인(1칸) + 서브개수 만큼 row 블록을 합침
+    bgBox.style.gridRow = `${currentRow} / span ${1 + mySubs.length}`;
+    agentGrid.appendChild(bgBox);
+
+    // 메인 에이전트는 [col, currentRow] 위치에
+    mainItem.card.classList.remove('group-start');
+    mainItem.card.style.gridColumn = col;
+    mainItem.card.style.gridRow = currentRow;
+    agentGrid.appendChild(mainItem.card);
+
+    // 서브 에이전트는 그 아랫줄들부터 순차 배치
+    mySubs.forEach((s, sIdx) => {
+      const subRow = currentRow + 1 + sIdx;
+      s.card.classList.remove('group-start');
+      s.card.style.gridColumn = col;
+      s.card.style.gridRow = subRow;
+      agentGrid.appendChild(s.card);
+      if (subRow > maxRowInBatch) maxRowInBatch = subRow;
+    });
+
+    col++;
   });
 
-  // 고아 서브에이전트가 남은 경우 (예외처리)
-  if (fallbackSubList.length > 0) {
-    const orphanedDiv = document.createElement('div');
-    orphanedDiv.className = 'agent-party';
-    const subRow = document.createElement('div');
-    subRow.className = 'agent-party-subs';
-    fallbackSubList.forEach(s => {
-      s.card.classList.remove('group-start');
-      subRow.appendChild(s.card);
-    });
-    orphanedDiv.appendChild(subRow);
-    agentGrid.appendChild(orphanedDiv);
+  // 고아 서브에이전트가 남은 경우
+  fallbackSubList.forEach(s => {
+    if (col > 10) {
+      col = 1;
+      currentRow = maxRowInBatch + 1;
+      maxRowInBatch = currentRow;
+    }
+    s.card.classList.remove('group-start');
+    s.card.style.gridColumn = col;
+    s.card.style.gridRow = currentRow;
+    agentGrid.appendChild(s.card);
+    col++;
+  });
+
+  // 레이아웃이 끝난 직후 윈도우 사이즈 동적 조절 통지
+  setTimeout(() => requestDynamicResize(), 50);
+}
+
+// 윈도우 높이 오토 조절 로직
+let resizeObserver = null;
+function requestDynamicResize() {
+  if (!window.electronAPI || !window.electronAPI.resizeWindow) return;
+  const container = document.getElementById('agent-container');
+  if (container) {
+    window.electronAPI.resizeWindow({ height: container.offsetHeight });
   }
+}
+
+if (window.ResizeObserver) {
+  resizeObserver = new ResizeObserver(() => requestDynamicResize());
+  resizeObserver.observe(document.body);
+}
+
+// --- Mission Control Dashboard Button ---
+
+function createWebDashboardButton() {
+  const button = document.createElement('button');
+  button.id = 'web-dashboard-btn';
+  button.className = 'web-dashboard-btn';
+  button.innerHTML = '🌐 View as Web';
+  button.title = 'Open Mission Control Dashboard';
+
+  button.onclick = async () => {
+    button.disabled = true;
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '⏳ Opening...';
+
+    try {
+      if (window.electronAPI && window.electronAPI.openWebDashboard) {
+        const result = await window.electronAPI.openWebDashboard();
+
+        if (result.success) {
+          button.innerHTML = '✓ Opened';
+          setTimeout(() => {
+            button.innerHTML = '🌐 View as Web';
+            button.disabled = false;
+          }, 2000);
+        } else {
+          button.innerHTML = '✗ Failed';
+          console.error('[Renderer] Failed to open dashboard:', result.error);
+          setTimeout(() => {
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+          }, 2000);
+        }
+      } else {
+        console.error('[Renderer] electronAPI.openWebDashboard not available');
+        button.disabled = false;
+        button.innerHTML = originalHTML;
+      }
+    } catch (error) {
+      console.error('[Renderer] Error opening dashboard:', error);
+      button.innerHTML = '✗ Error';
+      setTimeout(() => {
+        button.innerHTML = originalHTML;
+        button.disabled = false;
+      }, 2000);
+    }
+  };
+
+  return button;
 }
 
 // --- 이벤트 리스너 등록 ---
@@ -537,6 +611,11 @@ async function init() {
     }
     startIdleAnimation();
   }
+
+  // Create and add Mission Control dashboard button
+  const dashboardBtn = createWebDashboardButton();
+  document.body.appendChild(dashboardBtn);
+  console.log('[Renderer] Mission Control button added');
 
   // Register event listeners
   window.electronAPI.onAgentAdded(addAgent);

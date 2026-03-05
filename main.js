@@ -3,6 +3,7 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 const AgentManager = require('./agentManager');
+const { adaptAgentToMissionControl } = require('./missionControlAdapter');
 
 // Debug logging to file
 const debugLog = (msg) => {
@@ -92,6 +93,22 @@ function resizeWindowForAgents(agentsOrCount) {
 // =====================================================
 // 윈도우 생성
 // =====================================================
+ipcMain.on('resize-window', (e, size) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    const { width, height } = mainWindow.getBounds();
+    const newWidth = Math.max(220, size.width || width);
+    const newHeight = Math.max(260, (size.height || height) + 40); // 40px padding bottom
+
+    // Bottom-anchor logic: calculate Y position change
+    // If window becomes taller, y should move up by the difference
+    const diffHeight = newHeight - height;
+    const { y } = mainWindow.getBounds();
+    const newY = Math.max(0, y - diffHeight);
+
+    mainWindow.setBounds({ width: newWidth, height: newHeight, y: newY });
+  }
+});
+
 function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   const winSize = getWindowSizeForAgents(0);
@@ -131,6 +148,100 @@ function createWindow() {
     }
   }, 250);
 }
+
+// =====================================================
+// Mission Control Dashboard Window Management
+// =====================================================
+let missionControlWindow = null;
+let missionControlAuthToken = null;
+
+function generateAuthToken() {
+  const crypto = require('crypto');
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function createMissionControlWindow() {
+  if (missionControlWindow && !missionControlWindow.isDestroyed()) {
+    debugLog('[MissionControl] Window already open, focusing existing window');
+    missionControlWindow.focus();
+    return { success: true, alreadyOpen: true };
+  }
+
+  try {
+    // Generate auth token for this session
+    missionControlAuthToken = generateAuthToken();
+    debugLog(`[MissionControl] Generated auth token: ${missionControlAuthToken.slice(0, 8)}...`);
+
+    // Get current agents and adapt them for Mission Control
+    const agents = agentManager ? agentManager.getAllAgents() : [];
+    const adaptedAgents = agents.map(agent => adaptAgentToMissionControl(agent));
+    const agentDataParam = encodeURIComponent(JSON.stringify(adaptedAgents));
+
+    // Construct URL with auth and data
+    // Mission Control should be running on localhost:3000
+    const url = `http://localhost:3000?token=${missionControlAuthToken}&agents=${agentDataParam}&source=pixel-agent-desk`;
+
+    // Get display dimensions for positioning
+    const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+
+    // Create window with secure settings
+    missionControlWindow = new BrowserWindow({
+      width: Math.floor(width * 0.8),
+      height: Math.floor(height * 0.8),
+      x: Math.floor(width * 0.1),
+      y: Math.floor(height * 0.1),
+      title: 'Mission Control Dashboard',
+      backgroundColor: '#ffffff',
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        preload: path.join(__dirname, 'missionControlPreload.js')
+      }
+    });
+
+    // Log when window is ready
+    missionControlWindow.webContents.on('did-finish-load', () => {
+      debugLog('[MissionControl] Window loaded successfully');
+    });
+
+    // Handle navigation errors
+    missionControlWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+      debugLog(`[MissionControl] Failed to load: ${errorCode} - ${errorDescription}`);
+      missionControlWindow.destroy();
+      missionControlWindow = null;
+      missionControlAuthToken = null;
+    });
+
+    // Clean up when window is closed
+    missionControlWindow.on('closed', () => {
+      debugLog('[MissionControl] Window closed');
+      missionControlWindow = null;
+      missionControlAuthToken = null;
+    });
+
+    missionControlWindow.loadURL(url);
+    debugLog('[MissionControl] Window created and loading URL');
+
+    return { success: true };
+
+  } catch (error) {
+    debugLog(`[MissionControl] Failed to create window: ${error.message}`);
+    missionControlWindow = null;
+    missionControlAuthToken = null;
+    return { success: false, error: error.message };
+  }
+}
+
+function closeMissionControlWindow() {
+  if (missionControlWindow && !missionControlWindow.isDestroyed()) {
+    missionControlWindow.close();
+    debugLog('[MissionControl] Window closed by request');
+  }
+  missionControlWindow = null;
+  missionControlAuthToken = null;
+}
+
 
 // =====================================================
 // 앱 설정
@@ -623,6 +734,11 @@ app.whenReady().then(() => {
         mainWindow.webContents.send('agent-added', agent);
         resizeWindowForAgents(agentManager.getAllAgents());
       }
+      // Forward to Mission Control
+      if (missionControlWindow && !missionControlWindow.isDestroyed()) {
+        const adaptedAgent = adaptAgentForMissionControl(agent);
+        missionControlWindow.webContents.send('mission-agent-added', adaptedAgent);
+      }
       savePersistedState();
     });
 
@@ -632,6 +748,11 @@ app.whenReady().then(() => {
         // 상태 변화로 Sub/Team이 생기면 창 크기가 달라질 수 있으므로 업데이트
         resizeWindowForAgents(agentManager.getAllAgents());
       }
+      // Forward to Mission Control
+      if (missionControlWindow && !missionControlWindow.isDestroyed()) {
+        const adaptedAgent = adaptAgentForMissionControl(agent);
+        missionControlWindow.webContents.send('mission-agent-updated', adaptedAgent);
+      }
       savePersistedState();
     });
 
@@ -640,6 +761,10 @@ app.whenReady().then(() => {
         mainWindow.webContents.send('agent-removed', data);
         resizeWindowForAgents(agentManager.getAllAgents());
       }
+      // Forward to Mission Control
+      if (missionControlWindow && !missionControlWindow.isDestroyed()) {
+        missionControlWindow.webContents.send('mission-agent-removed', data);
+      }
       savePersistedState();
     });
 
@@ -647,6 +772,10 @@ app.whenReady().then(() => {
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('agents-cleaned', data);
         resizeWindowForAgents(agentManager.getAllAgents());
+      }
+      // Forward to Mission Control
+      if (missionControlWindow && !missionControlWindow.isDestroyed()) {
+        missionControlWindow.webContents.send('mission-agent-removed', { type: 'batch', ...data });
       }
       savePersistedState();
     });
@@ -767,4 +896,80 @@ ipcMain.on('focus-terminal', (event, agentId) => {
   exec(`powershell.exe -NoProfile -Command "${psCmd}"`, (err) => {
     if (err) debugLog(`[Main] Focus error: ${err.message}`);
   });
+});
+
+// =====================================================
+// Mission Control IPC Handlers
+// =====================================================
+
+// Open Mission Control dashboard
+ipcMain.handle('open-web-dashboard', async (event) => {
+  try {
+    const result = createMissionControlWindow();
+    return result;
+  } catch (error) {
+    debugLog(`[MissionControl] Error opening dashboard: ${error.message}`);
+    return { success: false, error: error.message };
+  }
+});
+
+// Close Mission Control dashboard
+ipcMain.handle('close-web-dashboard', async (event) => {
+  try {
+    closeMissionControlWindow();
+    return { success: true };
+  } catch (error) {
+    debugLog(`[MissionControl] Error closing dashboard: ${error.message}`);
+    return { success: false, error: error.message };
+  }
+});
+
+// Check if Mission Control dashboard is open
+ipcMain.handle('is-web-dashboard-open', async (event) => {
+  return {
+    isOpen: missionControlWindow !== null && !missionControlWindow.isDestroyed()
+  };
+});
+
+// Handle focus-agent command from Mission Control
+ipcMain.on('mission-focus-agent', (event, agentId) => {
+  debugLog(`[MissionControl] Focus requested for agent: ${agentId.slice(0, 8)}`);
+  // Forward to the existing focus-terminal handler
+  const pid = sessionPids.get(agentId);
+  if (!pid) {
+    debugLog(`[MissionControl] No PID found for agent: ${agentId.slice(0, 8)}`);
+    return;
+  }
+
+  const { exec } = require('child_process');
+  const psCmd = `
+    $targetPid = ${pid};
+    $wshell = New-Object -ComObject WScript.Shell;
+    $proc = Get-Process -Id $targetPid -ErrorAction SilentlyContinue;
+    if ($proc) {
+      $hwnd = $proc.MainWindowHandle;
+      if ($hwnd -eq 0) {
+        $parent = Get-CimInstance Win32_Process -Filter "ProcessId = $targetPid" | Select-Object -ExpandProperty ParentProcessId;
+        $proc = Get-Process -Id $parent -ErrorAction SilentlyContinue;
+        $hwnd = $proc.MainWindowHandle;
+      }
+      if ($hwnd -ne 0) {
+        $type = "[DllImport(\\"user32.dll\\")] public static extern bool SetForegroundWindow(IntPtr hWnd);";
+        Add-Type -MemberDefinition $type -Name "Win32Utils" -Namespace "Win32";
+        [Win32.Win32Utils]::SetForegroundWindow($hwnd);
+      }
+    }
+  `.replace(/\n/g, ' ');
+
+  exec(`powershell.exe -NoProfile -Command "${psCmd}"`, (err) => {
+    if (err) debugLog(`[MissionControl] Focus error: ${err.message}`);
+  });
+});
+
+// Handle dismiss-agent command from Mission Control
+ipcMain.on('mission-dismiss-agent', (event, agentId) => {
+  debugLog(`[MissionControl] Dismiss requested for agent: ${agentId.slice(0, 8)}`);
+  if (agentManager) {
+    agentManager.dismissAgent(agentId);
+  }
 });
