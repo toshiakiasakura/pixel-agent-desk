@@ -22,16 +22,41 @@ const MIME_TYPES = {
   '.svg': 'image/svg+xml',
 };
 
-// Global references to agent manager and WebSocket clients
+// Global references
 let agentManager = null;
+let sessionScanner = null;  // Task 3B-2
 let missionControlWindow = null;
 const wsClients = new Set();
+const sseClients = new Set();  // Task 3B-1: SSE 클라이언트
 
 /**
  * Set the agent manager reference
  */
 function setAgentManager(manager) {
   agentManager = manager;
+
+  // Task 3B-1: AgentManager 이벤트 → SSE 브로드캐스트
+  if (agentManager) {
+    agentManager.on('agent-added', (agent) => {
+      broadcastSSE('agent.created', agent);
+      broadcastUpdate('agent-added', agent);
+    });
+    agentManager.on('agent-updated', (agent) => {
+      broadcastSSE('agent.updated', agent);
+      broadcastUpdate('agent-updated', agent);
+    });
+    agentManager.on('agent-removed', (data) => {
+      broadcastSSE('agent.removed', data);
+      broadcastUpdate('agent-removed', data);
+    });
+  }
+}
+
+/**
+ * Set the session scanner reference (Task 3B-2)
+ */
+function setSessionScanner(scanner) {
+  sessionScanner = scanner;
 }
 
 /**
@@ -117,7 +142,36 @@ function calculateStats() {
     }
   }
 
+  // Task 3B-2: 토큰/비용 합산
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  let totalEstimatedCost = 0;
+  for (const agent of agents) {
+    const usage = agent.tokenUsage;
+    if (usage) {
+      totalInputTokens += usage.inputTokens || 0;
+      totalOutputTokens += usage.outputTokens || 0;
+      totalEstimatedCost += usage.estimatedCost || 0;
+    }
+  }
+  stats.tokens = {
+    input: totalInputTokens,
+    output: totalOutputTokens,
+    total: totalInputTokens + totalOutputTokens,
+    estimatedCost: Math.round(totalEstimatedCost * 10000) / 10000
+  };
+
   return stats;
+}
+
+/**
+ * Task 3B-1: SSE 브로드캐스트
+ */
+function broadcastSSE(type, data) {
+  const payload = `data: ${JSON.stringify({ type, data, timestamp: Date.now() })}\n\n`;
+  for (const res of sseClients) {
+    try { res.write(payload); } catch { sseClients.delete(res); }
+  }
 }
 
 /**
@@ -187,7 +241,7 @@ function handleAPIRequest(req, res, url) {
 
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -196,43 +250,75 @@ function handleAPIRequest(req, res, url) {
     return;
   }
 
-  // GET /api/agents - Get all agents
+  // ─── Task 3B-1: SSE 이벤트 스트림 ───
+  if (pathname === '/api/events' && req.method === 'GET') {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+    res.write(`data: ${JSON.stringify({ type: 'connected', timestamp: Date.now() })}\n\n`);
+    sseClients.add(res);
+
+    // Keep-alive (15초)
+    const keepAlive = setInterval(() => res.write(': keepalive\n\n'), 15000);
+    req.on('close', () => {
+      clearInterval(keepAlive);
+      sseClients.delete(res);
+    });
+    return;
+  }
+
+  // ─── GET /api/agents ───
   if (pathname === '/api/agents' && req.method === 'GET') {
     if (!agentManager) {
       res.writeHead(503, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Agent manager not available' }));
       return;
     }
-
     const agents = agentManager.getAllAgents();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(agents));
     return;
   }
 
-  // GET /api/agents/:id/details - Get agent details
+  // ─── POST /api/agents/:id/dismiss — 에이전트 수동 제거 (Task 3B-2) ───
+  if (pathname.match(/^\/api\/agents\/[^/]+\/dismiss$/) && req.method === 'POST') {
+    if (!agentManager) {
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Agent manager not available' }));
+      return;
+    }
+    const parts = pathname.split('/');
+    const agentId = parts[3];
+    const removed = agentManager.dismissAgent(agentId);
+    res.writeHead(removed ? 200 : 404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: removed, agentId }));
+    return;
+  }
+
+  // ─── GET /api/agents/:id ───
   if (pathname.startsWith('/api/agents/') && req.method === 'GET') {
     if (!agentManager) {
       res.writeHead(503, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Agent manager not available' }));
       return;
     }
-
     const agentId = pathname.split('/').pop();
     const agent = agentManager.getAgent(agentId);
-
     if (!agent) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Agent not found' }));
       return;
     }
-
+    // 세션 스캔 결과 병합
+    const sessionStats = sessionScanner ? sessionScanner.getSessionStats(agentId) : null;
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(agent));
+    res.end(JSON.stringify({ ...agent, sessionStats }));
     return;
   }
 
-  // GET /api/stats - Get statistics
+  // ─── GET /api/stats ───
   if (pathname === '/api/stats' && req.method === 'GET') {
     const stats = calculateStats();
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -240,18 +326,28 @@ function handleAPIRequest(req, res, url) {
     return;
   }
 
-  // GET /api/health - Health check
+  // ─── GET /api/sessions — JSONL 스캔 결과 (Task 3B-2) ───
+  if (pathname === '/api/sessions' && req.method === 'GET') {
+    const allStats = sessionScanner ? sessionScanner.getAllStats() : {};
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(allStats));
+    return;
+  }
+
+  // ─── GET /api/health ───
   if (pathname === '/api/health' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: 'ok',
       timestamp: Date.now(),
-      agents: agentManager ? agentManager.getAgentCount() : 0
+      agents: agentManager ? agentManager.getAgentCount() : 0,
+      sseClients: sseClients.size,
+      wsClients: wsClients.size
     }));
     return;
   }
 
-  // 404 for unknown API routes
+  // 404
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'API endpoint not found' }));
 }
@@ -386,8 +482,10 @@ process.on('SIGINT', () => {
 // Export functions for use in main.js
 module.exports = {
   setAgentManager,
+  setSessionScanner,
   setMissionControlWindow,
   broadcastUpdate,
+  broadcastSSE,
   calculateStats,
   startServer,
   PORT

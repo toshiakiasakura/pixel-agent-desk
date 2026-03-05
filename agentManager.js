@@ -13,7 +13,7 @@ class AgentManager extends EventEmitter {
     super();
     this.agents = new Map();
     this.config = {
-      maxAgents: 10,
+      softLimitWarning: 50,  // 소프트 워닝 (차단하지 않음, 로그만)
       idleTimeout: 10 * 60 * 1000,
       cleanupInterval: 60 * 1000
     };
@@ -42,9 +42,9 @@ class AgentManager extends EventEmitter {
     const now = Date.now();
     const existingAgent = this.agents.get(agentId);
 
-    if (!existingAgent && this.agents.size >= this.config.maxAgents) {
-      console.log(`[AgentManager] Max agents reached (${this.config.maxAgents})`);
-      return null;
+    // 소프트 워닝: 에이전트 수가 많으면 경고만 (등록 차단하지 않음)
+    if (!existingAgent && this.agents.size >= this.config.softLimitWarning) {
+      console.warn(`[AgentManager] ⚠ ${this.agents.size} agents active (soft limit: ${this.config.softLimitWarning}). Consider checking for stale sessions.`);
     }
 
     const prevState = existingAgent ? existingAgent.state : null;
@@ -75,14 +75,20 @@ class AgentManager extends EventEmitter {
       displayName: this.formatDisplayName(entry.slug, entry.projectPath),
       projectPath: entry.projectPath,
       jsonlPath: entry.jsonlPath || (existingAgent ? existingAgent.jsonlPath : null),
+      // Task 3A-2: 신규 메타데이터 필드
+      model: entry.model !== undefined ? entry.model : (existingAgent ? existingAgent.model : null),
+      permissionMode: entry.permissionMode !== undefined ? entry.permissionMode : (existingAgent ? existingAgent.permissionMode : null),
+      source: entry.source !== undefined ? entry.source : (existingAgent ? existingAgent.source : null),
+      agentType: entry.agentType !== undefined ? entry.agentType : (existingAgent ? existingAgent.agentType : null),
+      // Task 3A-3: 토큰 사용량 (훅에서 누적, 스캐너에서 보완)
+      tokenUsage: entry.tokenUsage !== undefined ? entry.tokenUsage : (existingAgent ? existingAgent.tokenUsage : { inputTokens: 0, outputTokens: 0, estimatedCost: 0 }),
       isSubagent: entry.isSubagent || (existingAgent ? existingAgent.isSubagent : false),
       isTeammate: entry.isTeammate || (existingAgent ? existingAgent.isTeammate : false),
       parentId: entry.parentId || (existingAgent ? existingAgent.parentId : null),
       state: newState,
       activeStartTime,
       lastDuration,
-      lastActivity: now, // 활동 시간은 즉시 갱신
-      source,
+      lastActivity: now,
       timestamp: entry.timestamp || now,
       firstSeen: existingAgent ? existingAgent.firstSeen : now,
       updateCount: existingAgent ? existingAgent.updateCount + 1 : 1

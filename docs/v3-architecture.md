@@ -4,6 +4,12 @@
 **작성자:** Antigravity (Architecture Review)  
 **목적:** Sonnet/GLM 등 구현 모델이 바로 작업 가능한 수준의 설계 문서
 
+**진행 상태 (2026-03-05 업데이트):**
+- ✅ **Phase 3A:** 데이터 파이프라인 정비 완료 (2026-03-05)
+- ✅ **Phase 3B-1:** 대시보드 서버 고도화(SSE, API) 완료 (2026-03-05)
+- ✅ **Phase 3B-2:** REST API 확장 완료 (2026-03-05)
+- ✅ **Phase 3B-3:** 대시보드 UI 리디자인 완료 (2026-03-05)
+
 ---
 
 ## 1. 프로젝트 개요
@@ -276,9 +282,9 @@ agentManager.on('*') → SSE broadcast → 대시보드 갱신
 
 ## 4. 구현 로드맵
 
-### Phase 3A: 데이터 파이프라인 정비 (1주, ~20시간)
+### Phase 3A: 데이터 파이프라인 정비 (완료 ✅)
 
-#### Task 3A-1: 훅 스키마 수정 (3시간)
+#### Task 3A-1: 훅 스키마 수정 (완료 ✅)
 **파일:** `main.js:startHookServer()` (491-580줄)
 
 ```javascript
@@ -316,7 +322,7 @@ const hookSchema = {
 };
 ```
 
-#### Task 3A-2: transcript_path 활용 (4시간)
+#### Task 3A-2: transcript_path 활용 (완료 ✅)
 **파일:** `main.js:processHookEvent()` (369-489줄), `agentManager.js`
 
 ```javascript
@@ -356,7 +362,7 @@ const agentData = {
 };
 ```
 
-#### Task 3A-3: 토큰 사용량 추출 (4시간)
+#### Task 3A-3: 토큰 사용량 추출 (완료 ✅)
 **파일:** `main.js:processHookEvent()` — PostToolUse 핸들러
 
 ```javascript
@@ -388,7 +394,7 @@ case 'PostToolUse': {
 }
 ```
 
-#### Task 3A-4: JSONL 세션 스캐너 (8시간)
+#### Task 3A-4: JSONL 세션 스캐너 (완료 ✅)
 **새 파일:** `sessionScanner.js`
 
 ```javascript
@@ -518,9 +524,9 @@ class SessionScanner {
 module.exports = SessionScanner;
 ```
 
-### Phase 3B: 대시보드 고도화 (1주, ~24시간)
+### Phase 3B: 대시보드 고도화 (진행 중 ⏳)
 
-#### Task 3B-1: SSE 이벤트 스트림 추가 (6시간)
+#### Task 3B-1: SSE 이벤트 스트림 추가 (완료 ✅)
 **파일:** `dashboard-server.js` — SSE 엔드포인트 추가
 
 ```javascript
@@ -562,7 +568,7 @@ if (url.pathname === '/api/events') {
 }
 ```
 
-#### Task 3B-2: REST API 확장 (6시간)
+#### Task 3B-2: REST API 확장 (완료 ✅)
 **파일:** `dashboard-server.js`
 
 ```javascript
@@ -576,8 +582,19 @@ if (url.pathname === '/api/events') {
 // GET /api/sessions — JSONL 스캔 결과 (토큰, 비용, 세션 메타)
 ```
 
-#### Task 3B-3: 대시보드 UI 리디자인 (12시간)
-**파일:** `dashboard.html` (리라이트)
+#### Task 3B-3: 대시보드 UI 리디자인 (완료 ✅)
+**파일:** `dashboard.html` (SSE 기반 완전 재작성)
+
+**구현된 기능:**
+- EventSource를 사용한 SSE 연결 (`/api/events`)
+- 실시간 에이전트 상태 업데이트 (화면 깜빡임 없는 DOM 갱신)
+- 3개 뷰: 개요, 에이전트, 토큰
+- Stats Grid: 전체 에이전트 수, 활성 에이전트, 완료된 작업, 총 비용
+- Agent Cards: 상태 뱃지, 프로젝트명, 모델, 작업 시간, 토큰 사용량
+- Token Chart: 에이전트별 토큰 사용량 시각화 (CSS 바 차트)
+- Live Feed: 실시간 이벤트 로그 (사이드바)
+- 프로젝트별 에이전트 그룹화
+- 반응형 디자인 (모바일 지원)
 
 **대시보드 구성:**
 ```
@@ -627,7 +644,7 @@ if (url.pathname === '/api/events') {
 | 대시보드 UI | 순수 HTML/CSS/JS | 유지 (프레임워크 불필요) |
 | 실시간 통신 | WebSocket (수동) | **SSE 추가** (대시보드용) |
 | 상태 관리 | EventEmitter | 유지 + 이벤트 타입 강화 |
-| 데이터 저장 | JSON (state.json) | 유지 (10개 에이전트까지) |
+| 데이터 저장 | JSON (state.json) | 유지 (소프트 리밋 50, 차단 없음) |
 | 세션 분석 | 없음 | **JSONL 스캐너 추가** |
 | 검증 | AJV | AJV 스키마 수정 |
 | 차트 | 없음 | **CSS-only 바 차트** |
@@ -637,7 +654,7 @@ if (url.pathname === '/api/events') {
 | 기능 | 이유 |
 |------|------|
 | Next.js/React | 우리 프로젝트는 Electron + 바닐라 JS, 오버킬 |
-| SQLite | 10개 에이전트 규모에선 JSON 충분 |
+| SQLite | 일반적인 사용 범위에서는 JSON 충분 (50개 초과 시 재검토) |
 | Zustand | Electron IPC 기반 상태 관리로 충분 |
 | Auth/RBAC | 로컬 데스크톱 앱, 인증 불필요 |
 | Tailwind CSS | 기존 vanilla CSS 유지 |
@@ -670,22 +687,22 @@ if (url.pathname === '/api/events') {
 
 ## 7. 검증 체크리스트
 
-### Phase 3A 완료 기준
+### Phase 3A 완료 기준 (완료 ✅)
 
-- [ ] Claude CLI 훅에서 `transcript_path`, `model`, `source` 정상 수신
-- [ ] `agentManager.getAgent(id).model`로 모델 정보 확인 가능
-- [ ] `agentManager.getAgent(id).tokenUsage`로 토큰 사용량 확인 가능
-- [ ] JSONL 스캐너가 60초 주기로 세션 통계 갱신
-- [ ] `tool_name` 필드명으로 스키마 수정 확인
-- [ ] `session_id` vs `sessionId` 이중 필드 정리
+- [x] Claude CLI 훅에서 `transcript_path`, `model`, `source` 정상 수신
+- [x] `agentManager.getAgent(id).model`로 모델 정보 확인 가능
+- [x] `agentManager.getAgent(id).tokenUsage`로 토큰 사용량 확인 가능
+- [x] JSONL 스캐너가 60초 주기로 세션 통계 갱신
+- [x] `tool_name` 필드명으로 스키마 수정 확인
+- [x] `session_id` vs `sessionId` 이중 필드 정리 (컨벤션 통일)
 
-### Phase 3B 완료 기준
+### Phase 3B 완료 기준 (완료 ✅)
 
-- [ ] `GET /api/events` SSE 스트림 정상 동작
-- [ ] 대시보드에서 에이전트 상태 변경 실시간 반영 (<1초)
-- [ ] 토큰 사용량 및 비용 표시
-- [ ] 타임라인 시각화 정상 렌더링
-- [ ] 에이전트 카드에 모델명, 프로젝트명, 작업시간 표시
+- [x] `GET /api/events` SSE 스트림 정상 동작
+- [x] 대시보드에서 에이전트 상태 변경 실시간 반영 (<1초)
+- [x] 토큰 사용량 및 비용 표시
+- [x] 토큰 차트 시각화 정상 렌더링
+- [x] 에이전트 카드에 모델명, 프로젝트명, 작업시간 표시
 
 ---
 

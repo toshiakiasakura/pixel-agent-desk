@@ -3,6 +3,7 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 const AgentManager = require('./agentManager');
+const SessionScanner = require('./sessionScanner');  // Task 3A-4
 const { adaptAgentToDashboard } = require('./dashboardAdapter');
 const errorHandler = require('./errorHandler');
 const Ajv = require('ajv');
@@ -19,7 +20,7 @@ console.error = (...args) => {
   // 파일에 저장
   try {
     fs.appendFileSync(errorLogPath, logMessage);
-  } catch (e) {}
+  } catch (e) { }
 
   // 원래 console.error도 호출
   originalConsoleError.apply(console, args);
@@ -31,7 +32,7 @@ process.on('uncaughtException', (error) => {
   const logMessage = `[${timestamp}] UNCAUGHT EXCEPTION: ${error.message}\n${error.stack}\n`;
   try {
     fs.appendFileSync(errorLogPath, logMessage);
-  } catch (e) {}
+  } catch (e) { }
 });
 
 process.on('unhandledRejection', (reason, promise) => {
@@ -39,7 +40,7 @@ process.on('unhandledRejection', (reason, promise) => {
   const logMessage = `[${timestamp}] UNHANDLED REJECTION: ${reason}\n`;
   try {
     fs.appendFileSync(errorLogPath, logMessage);
-  } catch (e) {}
+  } catch (e) { }
 });
 
 // Dashboard WebSocket broadcast (사용하지 않음 - 별도 서버 불필요)
@@ -57,6 +58,7 @@ const debugLog = (msg) => {
 
 let mainWindow;
 let agentManager = null;
+let sessionScanner = null;  // Task 3A-4
 let keepAliveInterval = null;
 
 function resizeWindowForAgents(agentsOrCount) {
@@ -375,7 +377,13 @@ function processHookEvent(data) {
 
   switch (event) {
     case 'SessionStart':
-      handleSessionStart(sessionId, data.cwd || '', data._pid || 0);
+      handleSessionStart(sessionId, data.cwd || '', data._pid || 0, false, false, 'Waiting', null, {
+        jsonlPath: data.transcript_path || null,
+        model: data.model || null,
+        permissionMode: data.permission_mode || null,
+        source: data.source || null,
+        agentType: data.agent_type || null,
+      });
       break;
 
     case 'SessionEnd':
@@ -437,7 +445,29 @@ function processHookEvent(data) {
     case 'PostToolUse': {
       if (agentManager && firstPreToolUseDone.has(sessionId)) {
         const agent = agentManager.getAgent(sessionId);
-        if (agent) agentManager.updateAgent({ ...agent, sessionId, state: 'Thinking' }, 'hook');
+        if (agent) {
+          // Task 3A-3: tool_response.token_usage 추출
+          const tokenUsage = data.tool_response && data.tool_response.token_usage;
+          if (tokenUsage) {
+            const cur = agent.tokenUsage || { inputTokens: 0, outputTokens: 0, estimatedCost: 0 };
+            const inputTokens = cur.inputTokens + (tokenUsage.input_tokens || 0);
+            const outputTokens = cur.outputTokens + (tokenUsage.output_tokens || 0);
+            const MODEL_PRICING = {
+              'claude-opus-4-5': { input: 15 / 1_000_000, output: 75 / 1_000_000 },
+              'claude-sonnet-4-5': { input: 3 / 1_000_000, output: 15 / 1_000_000 },
+              'claude-haiku-4-5': { input: 0.8 / 1_000_000, output: 4 / 1_000_000 },
+            };
+            const DEFAULT_PRICING = { input: 3 / 1_000_000, output: 15 / 1_000_000 };
+            const pricing = MODEL_PRICING[agent.model] || DEFAULT_PRICING;
+            const estimatedCost = inputTokens * pricing.input + outputTokens * pricing.output;
+            agentManager.updateAgent({
+              ...agent, sessionId, state: 'Thinking',
+              tokenUsage: { inputTokens, outputTokens, estimatedCost: Math.round(estimatedCost * 10000) / 10000 }
+            }, 'hook');
+          } else {
+            agentManager.updateAgent({ ...agent, sessionId, state: 'Thinking' }, 'hook');
+          }
+        }
       }
       scheduleIdleDone(sessionId);
       break;
@@ -491,7 +521,7 @@ function processHookEvent(data) {
 function startHookServer() {
   const http = require('http');
 
-  // P1-3: JSON Schema for hook validation
+  // P1-3: JSON Schema for hook validation (Task 3A-1: 실제 Claude 훅 필드 기반으로 수정)
   const hookSchema = {
     type: 'object',
     required: ['hook_event_name'],
@@ -503,32 +533,25 @@ function startHookServer() {
           'PreToolUse', 'PostToolUse', 'PostToolUseFailure',
           'Stop', 'TaskCompleted', 'PermissionRequest', 'Notification',
           'SubagentStart', 'SubagentStop', 'TeammateIdle',
-          'ConfigChange', 'WorktreeCreate', 'WorktreeRemove', 'PreCompact'
+          'ConfigChange', 'WorktreeCreate', 'WorktreeRemove', 'PreCompact',
+          'InstructionsLoaded'  // 새 이벤트
         ]
       },
-      session_id: {
-        type: 'string'
-      },
-      sessionId: {
-        type: 'string'
-      },
-      cwd: {
-        type: 'string'
-      },
-      state: {
-        type: 'string'
-      },
-      tool: {
-        type: 'string'
-      },
-      _pid: {
-        type: 'number'
-      },
-      _timestamp: {
-        type: 'number'
-      }
+      session_id: { type: 'string' },
+      transcript_path: { type: 'string' },  // ★ 실제 Claude 훅 필드 (jsonlPath 소스)
+      cwd: { type: 'string' },
+      permission_mode: { type: 'string' },  // ★ 권한 모드
+      tool_name: { type: 'string' },  // ★ 'tool' → 'tool_name' (실제 필드명)
+      tool_input: { type: 'object' },
+      tool_response: { type: 'object' },  // ★ token_usage 포함
+      source: { type: 'string' },  // ★ startup/resume/clear/compact
+      model: { type: 'string' },  // ★ 사용 모델
+      agent_type: { type: 'string' },  // ★ --agent 타입
+      agent_id: { type: 'string' },
+      _pid: { type: 'number' },
+      _timestamp: { type: 'number' }
     },
-    additionalProperties: true
+    additionalProperties: true  // Claude가 새 필드 추가할 수 있으므로 유지
   };
 
   const ajv = new Ajv();
@@ -843,14 +866,23 @@ function startLivenessChecker() {
 }
 
 
-function handleSessionStart(sessionId, cwd, pid = 0, isTeammate = false, isSubagent = false, initialState = 'Waiting', parentId = null) {
+function handleSessionStart(sessionId, cwd, pid = 0, isTeammate = false, isSubagent = false, initialState = 'Waiting', parentId = null, meta = {}) {
   if (!agentManager) {
-    pendingSessionStarts.push({ sessionId, cwd, ts: Date.now(), isTeammate, isSubagent, initialState, parentId });
+    pendingSessionStarts.push({ sessionId, cwd, ts: Date.now(), isTeammate, isSubagent, initialState, parentId, meta });
     debugLog(`[Hook] SessionStart queued: ${sessionId.slice(0, 8)}`);
     return;
   }
   const displayName = cwd ? path.basename(cwd) : 'Agent';
-  agentManager.updateAgent({ sessionId, projectPath: cwd, displayName, state: initialState, jsonlPath: null, isTeammate, isSubagent, parentId }, 'http');
+  // Task 3A-2: transcript_path, model, permissionMode, source, agentType 저장
+  agentManager.updateAgent({
+    sessionId, projectPath: cwd, displayName, state: initialState,
+    jsonlPath: meta.jsonlPath || null,
+    model: meta.model || null,
+    permissionMode: meta.permissionMode || null,
+    source: meta.source || null,
+    agentType: meta.agentType || null,
+    isTeammate, isSubagent, parentId
+  }, 'http');
   debugLog(`[Hook] SessionStart → agent: ${sessionId.slice(0, 8)} (${displayName}) ${isTeammate ? '[Team]' : ''} ${isSubagent ? '[Sub]' : ''} (Parent: ${parentId ? parentId.slice(0, 8) : 'none'})`);
 
   if (pid > 0) {
@@ -922,6 +954,10 @@ app.whenReady().then(() => {
   // 1. 에이전트 매니저 즉시 시작 (UI 뜨기 전부터 데이터 수집)
   agentManager = new AgentManager();
   agentManager.start();
+
+  // Task 3A-4: 세션 스캐너 시작 (60초마다 JSONL → 토큰/비용 보완)
+  sessionScanner = new SessionScanner(agentManager, debugLog);
+  sessionScanner.start(60_000);
 
   // 2. 백그라운드 서비스 시작
   startHookServer();       // HTTP 훅 서버 (47821 포트)
@@ -1263,3 +1299,13 @@ ipcMain.on('get-dashboard-agents', (event) => {
   }
 });
 
+// Task 3A-4: 앱 종료 시 SessionScanner 정리
+app.on('before-quit', () => {
+  if (sessionScanner) {
+    sessionScanner.stop();
+    debugLog('[Main] SessionScanner stopped');
+  }
+  if (agentManager) {
+    agentManager.stop();
+  }
+});

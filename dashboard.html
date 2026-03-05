@@ -3,8 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Dashboard</title>
+  <title>Pixel Agent Desk Dashboard</title>
   <style>
+    :root {
+      --color-bg: #0f172a;
+      --color-card: #1e293b;
+      --color-card-hover: #334155;
+      --color-border: #334155;
+      --color-text: #f1f5f9;
+      --color-text-muted: #94a3b8;
+      --color-primary: #3b82f6;
+      --color-success: #22c55e;
+      --color-warning: #f59e0b;
+      --color-error: #ef4444;
+      --color-info: #8b5cf6;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -12,243 +31,164 @@
     }
 
     body {
-      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #333;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.5;
       min-height: 100vh;
-      padding: 20px;
     }
 
-    .dashboard-container {
-      max-width: 1400px;
-      margin: 0 auto;
+    /* Layout */
+    .dashboard {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      grid-template-rows: auto 1fr auto;
+      min-height: 100vh;
+      gap: 0;
     }
 
+    /* Header */
     .header {
-      text-align: center;
-      color: white;
-      margin-bottom: 30px;
-      animation: fadeInDown 0.5s ease-out;
-    }
-
-    .header h1 {
-      font-size: 2.5em;
-      margin-bottom: 10px;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    }
-
-    .header p {
-      font-size: 1.1em;
-      opacity: 0.9;
-    }
-
-    .header .connection-status {
-      display: inline-flex;
+      grid-column: 1 / -1;
+      background: var(--color-card);
+      border-bottom: 1px solid var(--color-border);
+      padding: 16px 24px;
+      display: flex;
       align-items: center;
-      gap: 8px;
-      margin-top: 10px;
-      padding: 6px 16px;
-      background: rgba(255,255,255,0.15);
-      border-radius: 20px;
-      font-size: 0.9em;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+      z-index: 10;
     }
 
-    .status-indicator {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #6bcf77;
-      animation: pulse 2s infinite;
-    }
-
-    .status-indicator.disconnected {
-      background: #ff6b6b;
-      animation: none;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.7; transform: scale(1.1); }
-    }
-
-    @keyframes fadeInDown {
-      from {
-        opacity: 0;
-        transform: translateY(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Stats Panel */
-    .stats-panel {
-      background: white;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-      margin-bottom: 30px;
-      animation: fadeInUp 0.5s ease-out;
-    }
-
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 20px;
-      margin-bottom: 20px;
-    }
-
-    .stat-card {
-      text-align: center;
-      padding: 16px;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-      border-radius: 12px;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .stat-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-
-    .stat-card .icon {
-      font-size: 2em;
-      margin-bottom: 8px;
-    }
-
-    .stat-card .value {
-      font-size: 2em;
-      font-weight: bold;
-      color: #667eea;
-    }
-
-    .stat-card .label {
-      font-size: 0.85em;
-      color: #666;
-      text-transform: uppercase;
-      margin-top: 4px;
-    }
-
-    /* Performance Metrics */
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    .header-left {
+      display: flex;
+      align-items: center;
       gap: 16px;
-      padding-top: 20px;
-      border-top: 1px solid #e0e0e0;
     }
 
-    .metric-item {
+    .header-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .header-subtitle {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+
+    .header-right {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 12px;
-      background: rgba(102, 126, 234, 0.05);
-      border-radius: 8px;
     }
 
-    .metric-icon {
-      font-size: 1.5em;
-    }
-
-    .metric-info {
-      flex: 1;
-    }
-
-    .metric-label {
-      font-size: 0.8em;
-      color: #666;
-      text-transform: uppercase;
-    }
-
-    .metric-value {
-      font-size: 1.2em;
-      font-weight: bold;
-      color: #333;
-    }
-
-    /* Project Groups */
-    .project-groups {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-
-    .project-group {
-      background: white;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-      animation: fadeInUp 0.5s ease-out;
-      animation-delay: calc(var(--index) * 0.1s);
-      animation-fill-mode: both;
-    }
-
-    .project-header {
+    .connection-status {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 2px solid #f0f0f0;
+      gap: 8px;
+      padding: 6px 12px;
+      background: var(--color-bg);
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
     }
 
-    .project-name {
-      font-size: 1.3em;
-      font-weight: bold;
-      color: #333;
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-text-muted);
+      transition: background 0.3s ease;
     }
 
-    .project-stats {
+    .status-indicator.connected {
+      background: var(--color-success);
+      box-shadow: 0 0 8px var(--color-success);
+    }
+
+    .status-indicator.disconnected {
+      background: var(--color-error);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: var(--color-card);
+      border-right: 1px solid var(--color-border);
+      padding: 20px 0;
       display: flex;
-      gap: 16px;
-      font-size: 0.9em;
-      color: #666;
+      flex-direction: column;
     }
 
-    /* Agent Timeline */
-    .timeline {
-      position: relative;
-      padding-left: 30px;
+    .nav-section {
+      margin-bottom: 24px;
     }
 
-    .timeline::before {
-      content: '';
-      position: absolute;
-      left: 10px;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: linear-gradient(to bottom, #667eea, #764ba2);
+    .nav-title {
+      padding: 0 20px 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
     }
 
-    .agent-timeline-item {
-      position: relative;
-      margin-bottom: 16px;
-      padding: 12px;
-      background: #f8f9fa;
-      border-radius: 8px;
-      border-left: 4px solid #667eea;
-      animation: slideIn 0.3s ease-out;
+    .nav-item {
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      color: var(--color-text-muted);
+    }
+
+    .nav-item:hover {
+      background: var(--color-card-hover);
+      color: var(--color-text);
+    }
+
+    .nav-item.active {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--color-primary);
+      border-right: 2px solid var(--color-primary);
+    }
+
+    .live-feed {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .live-feed-title {
+      padding: 0 20px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+    }
+
+    .live-feed-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 10px;
+    }
+
+    .live-feed-item {
+      padding: 8px 10px;
+      margin-bottom: 4px;
+      background: var(--color-bg);
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      animation: slideIn 0.3s ease;
     }
 
     @keyframes slideIn {
       from {
         opacity: 0;
-        transform: translateX(-20px);
+        transform: translateX(-10px);
       }
       to {
         opacity: 1;
@@ -256,397 +196,971 @@
       }
     }
 
-    .agent-timeline-item::before {
-      content: '';
-      position: absolute;
-      left: -24px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #667eea;
-      border: 2px solid white;
-      box-shadow: 0 0 0 2px #667eea;
+    .live-feed-item .time {
+      color: var(--color-text-muted);
+      font-size: 0.7rem;
     }
 
-    .agent-timeline-item.state-working { border-left-color: #ffd93d; }
-    .agent-timeline-item.state-working::before { background: #ffd93d; box-shadow: 0 0 0 2px #ffd93d; }
+    .live-feed-item .message {
+      color: var(--color-text);
+      margin-top: 2px;
+    }
 
-    .agent-timeline-item.state-thinking { border-left-color: #87ceeb; }
-    .agent-timeline-item.state-thinking::before { background: #87ceeb; box-shadow: 0 0 0 2px #87ceeb; }
+    /* Main Content */
+    .main-content {
+      padding: 24px;
+      overflow-y: auto;
+    }
 
-    .agent-timeline-item.state-completed { border-left-color: #6bcf77; }
-    .agent-timeline-item.state-completed::before { background: #6bcf77; box-shadow: 0 0 0 2px #6bcf77; }
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
 
-    .agent-timeline-item.state-waiting { border-left-color: #e0e0e0; }
-    .agent-timeline-item.state-waiting::before { background: #e0e0e0; box-shadow: 0 0 0 2px #e0e0e0; }
+    .stat-card {
+      background: var(--color-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: all 0.2s ease;
+    }
 
-    .agent-timeline-item.state-error { border-left-color: #ff6b6b; }
-    .agent-timeline-item.state-error::before { background: #ff6b6b; box-shadow: 0 0 0 2px #ff6b6b; }
+    .stat-card:hover {
+      border-color: var(--color-primary);
+      box-shadow: var(--shadow-md);
+    }
 
-    .agent-timeline-item.state-help { border-left-color: #ffa500; }
-    .agent-timeline-item.state-help::before { background: #ffa500; box-shadow: 0 0 0 2px #ffa500; }
-
-    .agent-info {
+    .stat-header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .stat-icon {
+      font-size: 1.5rem;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--color-text);
+    }
+
+    .stat-change {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      margin-top: 4px;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 24px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    /* Agents Grid */
+    .agents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 16px;
+    }
+
+    .agent-card {
+      background: var(--color-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 16px;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .agent-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--color-border);
+      transition: background 0.3s ease;
+    }
+
+    .agent-card.state-working::before { background: var(--color-primary); }
+    .agent-card.state-thinking::before { background: var(--color-info); }
+    .agent-card.state-waiting::before { background: var(--color-warning); }
+    .agent-card.state-done::before { background: var(--color-success); }
+    .agent-card.state-help::before { background: var(--color-error); }
+    .agent-card.state-error::before { background: var(--color-error); }
+
+    .agent-card:hover {
+      border-color: var(--color-primary);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .agent-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
     }
 
     .agent-name {
-      font-weight: bold;
-      color: #333;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .agent-state {
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 0.8em;
-      font-weight: bold;
+    .agent-id {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      font-family: monospace;
+    }
+
+    .agent-status {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
       text-transform: uppercase;
     }
 
-    .agent-meta {
+    .agent-status.working {
+      background: rgba(59, 130, 246, 0.2);
+      color: var(--color-primary);
+    }
+
+    .agent-status.thinking {
+      background: rgba(139, 92, 246, 0.2);
+      color: var(--color-info);
+    }
+
+    .agent-status.waiting {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--color-warning);
+    }
+
+    .agent-status.done,
+    .agent-status.completed {
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--color-success);
+    }
+
+    .agent-status.help {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--color-error);
+    }
+
+    .agent-status.error {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--color-error);
+    }
+
+    .agent-body {
+      margin-bottom: 12px;
+    }
+
+    .agent-row {
       display: flex;
-      gap: 16px;
-      font-size: 0.85em;
-      color: #666;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      margin-bottom: 4px;
+    }
+
+    .agent-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .agent-label {
+      font-weight: 500;
+      min-width: 60px;
+    }
+
+    .agent-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 12px;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .agent-tokens {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.875rem;
+    }
+
+    .token-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--color-text-muted);
+    }
+
+    .token-value {
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .agent-time {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
     }
 
     .type-badge {
-      display: inline-block;
       padding: 2px 8px;
       border-radius: 4px;
-      font-size: 0.75em;
-      font-weight: bold;
+      font-size: 0.7rem;
+      font-weight: 600;
       text-transform: uppercase;
       margin-left: 8px;
     }
 
-    .type-main { background: #667eea; color: white; }
-    .type-subagent { background: #f093fb; color: white; }
-    .type-teammate { background: #4facfe; color: white; }
+    .type-badge.main {
+      background: rgba(59, 130, 246, 0.2);
+      color: var(--color-primary);
+    }
+
+    .type-badge.subagent {
+      background: rgba(236, 72, 153, 0.2);
+      color: #ec4899;
+    }
+
+    .type-badge.teammate {
+      background: rgba(34, 211, 238, 0.2);
+      color: #22d3ee;
+    }
 
     /* Empty State */
     .empty-state {
       text-align: center;
-      color: white;
       padding: 60px 20px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 16px;
-      backdrop-filter: blur(10px);
-      animation: fadeInUp 0.5s ease-out;
+      color: var(--color-text-muted);
     }
 
-    .empty-state h2 {
-      font-size: 2em;
-      margin-bottom: 15px;
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+      opacity: 0.5;
     }
 
-    .empty-state p {
-      font-size: 1.1em;
-      opacity: 0.9;
+    .empty-state-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: 8px;
+    }
+
+    .empty-state-text {
+      font-size: 1rem;
     }
 
     /* Loading State */
     .loading {
-      text-align: center;
-      padding: 40px;
-      color: white;
-      font-size: 1.2em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      color: var(--color-text-muted);
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--color-border);
+      border-top-color: var(--color-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 12px;
     }
 
-    .loading::after {
-      content: '...';
-      animation: pulse 1.5s infinite;
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--color-bg);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--color-border);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--color-text-muted);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .agents-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.3s ease;
+    }
+
+    /* Token Chart */
+    .token-chart {
+      background: var(--color-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .chart-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: 16px;
+    }
+
+    .chart-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chart-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .bar-label {
+      min-width: 120px;
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+
+    .bar-track {
+      flex: 1;
+      height: 24px;
+      background: var(--color-bg);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--color-primary), var(--color-info));
+      border-radius: 4px;
+      transition: width 0.5s ease;
+      position: relative;
+    }
+
+    .bar-value {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-text);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    .bar-total {
+      min-width: 80px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-text);
+      text-align: right;
     }
   </style>
 </head>
 <body>
-  <div class="dashboard-container">
-    <div class="header">
-      <h1>픽셀 에이전트 데스크</h1>
-      <p>현재 작업 중인 AI 에이전트들의 상태를 한눈에 확인하세요</p>
-      <div class="connection-status">
-        <span class="status-indicator" id="statusIndicator"></span>
-        <span id="connectionStatus">연결 중...</span>
+  <div class="dashboard">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div>
+          <h1 class="header-title">🤖 Pixel Agent Desk</h1>
+          <p class="header-subtitle">AI 에이전트 실시간 모니터링 대시보드</p>
+        </div>
       </div>
-    </div>
+      <div class="header-right">
+        <div class="connection-status">
+          <span class="status-indicator" id="statusIndicator"></span>
+          <span id="connectionStatus">연결 중...</span>
+        </div>
+      </div>
+    </header>
 
-    <div id="dashboardContent">
-      <div class="loading">데이터를 불러오는 중</div>
-    </div>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="nav-section">
+        <div class="nav-title">메뉴</div>
+        <div class="nav-item active" data-view="overview">
+          <span>📊</span>
+          <span>개요</span>
+        </div>
+        <div class="nav-item" data-view="agents">
+          <span>👥</span>
+          <span>에이전트</span>
+        </div>
+        <div class="nav-item" data-view="tokens">
+          <span>💰</span>
+          <span>토큰</span>
+        </div>
+      </div>
+
+      <div class="live-feed">
+        <div class="live-feed-title">실시간 이벤트</div>
+        <div class="live-feed-list" id="liveFeedList">
+          <!-- Live feed items will be inserted here -->
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <span>데이터를 불러오는 중...</span>
+      </div>
+    </main>
   </div>
 
   <script>
-    // Dashboard Dashboard Script
-    let agents = [];
-    let initialized = false;
+    /**
+     * Pixel Agent Desk Dashboard
+     * SSE 기반 실시간 업데이트
+     */
+
+    // 상태 관리
+    const state = {
+      agents: new Map(), // sessionId -> agent data
+      stats: {
+        total: 0,
+        active: 0,
+        completed: 0,
+        totalTokens: 0,
+        totalCost: 0
+      },
+      connected: false,
+      currentView: 'overview'
+    };
+
+    // DOM 요소
+    const elements = {
+      mainContent: document.getElementById('mainContent'),
+      liveFeedList: document.getElementById('liveFeedList'),
+      statusIndicator: document.getElementById('statusIndicator'),
+      connectionStatus: document.getElementById('connectionStatus')
+    };
 
     /**
-     * Initialize dashboard
+     * SSE 연결 시작
      */
-    async function init() {
-      console.log('[Dashboard] Initializing dashboard...');
+    function connectSSE() {
+      const eventSource = new EventSource('http://localhost:3000/api/events');
 
-      // Show empty state immediately (will be replaced when data arrives)
-      renderDashboard();
+      eventSource.onopen = () => {
+        console.log('[Dashboard] SSE 연결 성공');
+        state.connected = true;
+        updateConnectionStatus(true);
+        addLiveFeed('시스템', '대시보드에 연결되었습니다');
+      };
 
-      // Listen for initial data from main process
-      if (window.dashboardAPI) {
-        try {
-          // Request initial agents
-          console.log('[Dashboard] Requesting initial agents...');
-          const initialAgents = await window.dashboardAPI.getInitialAgents();
-          console.log('[Dashboard] Received initial agents:', initialAgents.length);
-          agents = initialAgents || [];
-          initialized = true;
-          renderDashboard();
-        } catch (error) {
-          console.error('[Dashboard] Failed to get initial agents:', error);
-          agents = [];
-          renderDashboard();
+      eventSource.onerror = (error) => {
+        console.error('[Dashboard] SSE 연결 오류:', error);
+        state.connected = false;
+        updateConnectionStatus(false);
+        addLiveFeed('시스템', '연결이 끊어졌습니다. 재연결 중...');
+      };
+
+      // 이벤트 리스너
+      eventSource.addEventListener('connected', (event) => {
+        console.log('[Dashboard] 서버 연결 확인');
+        // 초기 데이터 로드
+        fetchInitialData();
+      });
+
+      eventSource.addEventListener('agent.created', (event) => {
+        const data = JSON.parse(event.data);
+        console.log('[Dashboard] 에이전트 생성:', data);
+        updateAgent(data);
+        addLiveFeed('생성', `${data.name || 'Agent'} 에이전트가 생성되었습니다`);
+      });
+
+      eventSource.addEventListener('agent.updated', (event) => {
+        const data = JSON.parse(event.data);
+        console.log('[Dashboard] 에이전트 업데이트:', data);
+        updateAgent(data);
+      });
+
+      eventSource.addEventListener('agent.removed', (event) => {
+        const data = JSON.parse(event.data);
+        console.log('[Dashboard] 에이전트 제거:', data);
+        removeAgent(data.id);
+        addLiveFeed('제거', `에이전트가 제거되었습니다 (${data.id?.slice(0, 8)}...)`);
+      });
+
+      return eventSource;
+    }
+
+    /**
+     * 초기 데이터 로드
+     */
+    async function fetchInitialData() {
+      try {
+        const response = await fetch('http://localhost:3000/api/agents');
+        const agents = await response.json();
+
+        console.log('[Dashboard] 초기 에이전트 데이터:', agents.length);
+
+        for (const agent of agents) {
+          state.agents.set(agent.sessionId, agent);
         }
 
-        // Listen for agent events from main process
-        window.dashboardAPI.onAgentAdded((agent) => {
-          console.log('[Dashboard] Agent added:', agent);
-          agents.push(agent);
-          renderDashboard();
-        });
-
-        window.dashboardAPI.onAgentUpdated((agent) => {
-          console.log('[Dashboard] Agent updated:', agent);
-          const index = agents.findIndex(a => a.id === agent.id);
-          if (index !== -1) {
-            agents[index] = agent;
-          } else {
-            agents.push(agent);
-          }
-          renderDashboard();
-        });
-
-        window.dashboardAPI.onAgentRemoved((data) => {
-          console.log('[Dashboard] Agent removed:', data);
-          agents = agents.filter(a => a.id !== data.id);
-          renderDashboard();
-        });
-
-        // Update connection status
-        updateConnectionStatus(true);
-      } else {
-        console.error('[Dashboard] dashboardAPI not available');
-        updateConnectionStatus(false);
-        agents = [];
-        renderDashboard();
+        updateStats();
+        render();
+      } catch (error) {
+        console.error('[Dashboard] 초기 데이터 로드 실패:', error);
+        renderEmpty();
       }
     }
 
     /**
-     * Update connection status indicator
+     * 에이전트 업데이트
+     */
+    function updateAgent(agent) {
+      state.agents.set(agent.sessionId, agent);
+      updateStats();
+      render();
+    }
+
+    /**
+     * 에이전트 제거
+     */
+    function removeAgent(sessionId) {
+      state.agents.delete(sessionId);
+      updateStats();
+      render();
+    }
+
+    /**
+     * 통계 업데이트
+     */
+    function updateStats() {
+      const agents = Array.from(state.agents.values());
+
+      state.stats.total = agents.length;
+      state.stats.active = agents.filter(a =>
+        a.status === 'working' || a.status === 'thinking'
+      ).length;
+      state.stats.completed = agents.filter(a =>
+        a.status === 'done' || a.status === 'completed'
+      ).length;
+      state.stats.totalTokens = agents.reduce((sum, a) =>
+        sum + (a.tokenUsage?.inputTokens || 0) + (a.tokenUsage?.outputTokens || 0), 0
+      );
+      state.stats.totalCost = agents.reduce((sum, a) =>
+        sum + (a.tokenUsage?.estimatedCost || 0), 0
+      );
+    }
+
+    /**
+     * 연결 상태 업데이트
      */
     function updateConnectionStatus(connected) {
-      const indicator = document.getElementById('statusIndicator');
-      const status = document.getElementById('connectionStatus');
-
-      if (indicator && status) {
-        if (connected) {
-          indicator.classList.remove('disconnected');
-          status.textContent = 'Connected';
-        } else {
-          indicator.classList.add('disconnected');
-          status.textContent = 'Disconnected';
-        }
+      if (connected) {
+        elements.statusIndicator.classList.add('connected');
+        elements.statusIndicator.classList.remove('disconnected');
+        elements.connectionStatus.textContent = '연결됨';
+      } else {
+        elements.statusIndicator.classList.remove('connected');
+        elements.statusIndicator.classList.add('disconnected');
+        elements.connectionStatus.textContent = '연결 안됨';
       }
     }
 
     /**
-     * Render the complete dashboard
+     * 라이브 피드 추가
      */
-    function renderDashboard() {
-      const container = document.getElementById('dashboardContent');
+    function addLiveFeed(type, message) {
+      const item = document.createElement('div');
+      item.className = 'live-feed-item';
+
+      const time = new Date().toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      item.innerHTML = `
+        <div class="time">${time}</div>
+        <div class="message">[${type}] ${message}</div>
+      `;
+
+      elements.liveFeedList.insertBefore(item, elements.liveFeedList.firstChild);
+
+      // 최대 50개만 유지
+      while (elements.liveFeedList.children.length > 50) {
+        elements.liveFeedList.removeChild(elements.liveFeedList.lastChild);
+      }
+    }
+
+    /**
+     * 렌더링
+     */
+    function render() {
+      if (state.currentView === 'overview') {
+        renderOverview();
+      } else if (state.currentView === 'agents') {
+        renderAgents();
+      } else if (state.currentView === 'tokens') {
+        renderTokens();
+      }
+    }
+
+    /**
+     * 개요 렌더링
+     */
+    function renderOverview() {
+      const agents = Array.from(state.agents.values());
 
       if (agents.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <h2>😴 대기 중</h2>
-            <p>현재 작업 중인 에이전트가 없습니다.</p>
-            <p style="font-size: 0.9em; margin-top: 10px; opacity: 0.8;">Claude CLI에서 작업을 시작하면 자동으로 표시됩니다</p>
-          </div>
-        `;
+        renderEmpty();
         return;
       }
 
-      const stats = calculateStats();
-      const projectGroups = groupAgentsByProject();
+      elements.mainContent.innerHTML = `
+        <div class="stats-grid fade-in">
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-icon">👥</span>
+              <span class="stat-label">전체 에이전트</span>
+            </div>
+            <div class="stat-value">${state.stats.total}</div>
+            <div class="stat-change">현재 활성: ${state.stats.active}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-icon">⚡</span>
+              <span class="stat-label">활성 에이전트</span>
+            </div>
+            <div class="stat-value">${state.stats.active}</div>
+            <div class="stat-change">작업/생각 중</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-icon">✅</span>
+              <span class="stat-label">완료된 작업</span>
+            </div>
+            <div class="stat-value">${state.stats.completed}</div>
+            <div class="stat-change">완료율: ${state.stats.total > 0 ? Math.round(state.stats.completed / state.stats.total * 100) : 0}%</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-icon">💰</span>
+              <span class="stat-label">총 비용</span>
+            </div>
+            <div class="stat-value">$${state.stats.totalCost.toFixed(4)}</div>
+            <div class="stat-change">토큰: ${formatNumber(state.stats.totalTokens)}</div>
+          </div>
+        </div>
 
-      container.innerHTML = `
-        ${renderStatsPanel(stats)}
-        ${renderProjectGroups(projectGroups)}
+        <div class="section fade-in">
+          <div class="section-header">
+            <h2 class="section-title">활성 에이전트</h2>
+          </div>
+          <div class="agents-grid">
+            ${agents.slice(0, 6).map(agent => renderAgentCard(agent)).join('')}
+          </div>
+        </div>
       `;
     }
 
     /**
-     * Calculate statistics from agents
+     * 에이전트 뷰 렌더링
      */
-    function calculateStats() {
-      const total = agents.length;
-      const active = agents.filter(a => a.status === 'working' || a.status === 'thinking').length;
-      const completed = agents.filter(a => a.status === 'completed' || a.status === 'done').length;
-      const waiting = agents.filter(a => a.status === 'waiting' || a.status === 'idle').length;
+    function renderAgents() {
+      const agents = Array.from(state.agents.values());
 
-      // Calculate average completion time
-      const completedAgents = agents.filter(a => a.status === 'completed' || a.status === 'done');
-      const avgTime = completedAgents.length > 0
-        ? completedAgents.reduce((sum, a) => sum + (a.timing?.elapsed || 0), 0) / completedAgents.length
-        : 0;
-
-      return { total, active, completed, waiting, avgTime };
-    }
-
-    /**
-     * Group agents by project
-     */
-    function groupAgentsByProject() {
-      const groups = {};
-
-      for (const agent of agents) {
-        const project = agent.project || agent.metadata?.projectPath || 'Default';
-        if (!groups[project]) {
-          groups[project] = {
-            name: project.split('/').pop() || project,
-            agents: [],
-            active: 0,
-            completed: 0
-          };
-        }
-        groups[project].agents.push(agent);
-
-        if (agent.status === 'working' || agent.status === 'thinking') {
-          groups[project].active++;
-        } else if (agent.status === 'completed' || agent.status === 'done') {
-          groups[project].completed++;
-        }
+      if (agents.length === 0) {
+        renderEmpty();
+        return;
       }
 
-      return Object.values(groups);
+      // 프로젝트별 그룹화
+      const groups = new Map();
+      for (const agent of agents) {
+        const project = agent.projectPath?.split('/').pop() || 'Default';
+        if (!groups.has(project)) {
+          groups.set(project, []);
+        }
+        groups.get(project).push(agent);
+      }
+
+      let html = '<div class="section fade-in">';
+
+      for (const [project, projectAgents] of groups) {
+        html += `
+          <div class="section-header">
+            <h2 class="section-title">📁 ${project}</h2>
+            <span style="color: var(--color-text-muted);">${projectAgents.length} 에이전트</span>
+          </div>
+          <div class="agents-grid" style="margin-bottom: 24px;">
+            ${projectAgents.map(agent => renderAgentCard(agent)).join('')}
+          </div>
+        `;
+      }
+
+      html += '</div>';
+      elements.mainContent.innerHTML = html;
     }
 
     /**
-     * Render stats panel
+     * 토큰 뷰 렌더링
      */
-    function renderStatsPanel(stats) {
-      return `
-        <div class="stats-panel">
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="icon">👥</div>
-              <div class="value">${stats.total}</div>
-              <div class="label">Total Agents</div>
-            </div>
-            <div class="stat-card">
-              <div class="icon">⚡</div>
-              <div class="value">${stats.active}</div>
-              <div class="label">Active</div>
-            </div>
-            <div class="stat-card">
-              <div class="icon">✅</div>
-              <div class="value">${stats.completed}</div>
-              <div class="label">Completed</div>
-            </div>
-            <div class="stat-card">
-              <div class="icon">⏱️</div>
-              <div class="value">${formatTime(stats.avgTime)}</div>
-              <div class="label">Avg Time</div>
+    function renderTokens() {
+      const agents = Array.from(state.agents.values());
+
+      if (agents.length === 0) {
+        renderEmpty();
+        return;
+      }
+
+      // 정렬: 토큰 사용량 순
+      const sortedAgents = [...agents].sort((a, b) => {
+        const aTokens = (a.tokenUsage?.inputTokens || 0) + (a.tokenUsage?.outputTokens || 0);
+        const bTokens = (b.tokenUsage?.inputTokens || 0) + (b.tokenUsage?.outputTokens || 0);
+        return bTokens - aTokens;
+      });
+
+      const maxTokens = Math.max(...sortedAgents.map(a =>
+        (a.tokenUsage?.inputTokens || 0) + (a.tokenUsage?.outputTokens || 0)
+      ));
+
+      elements.mainContent.innerHTML = `
+        <div class="section fade-in">
+          <div class="section-header">
+            <h2 class="section-title">토큰 사용량</h2>
+          </div>
+          <div class="token-chart">
+            <h3 class="chart-title">에이전트별 토큰 사용량</h3>
+            <div class="chart-bars">
+              ${sortedAgents.map(agent => {
+                const inputTokens = agent.tokenUsage?.inputTokens || 0;
+                const outputTokens = agent.tokenUsage?.outputTokens || 0;
+                const totalTokens = inputTokens + outputTokens;
+                const percentage = maxTokens > 0 ? (totalTokens / maxTokens * 100) : 0;
+
+                return `
+                  <div class="chart-bar">
+                    <div class="bar-label">${agent.name || agent.sessionId.slice(0, 8)}</div>
+                    <div class="bar-track">
+                      <div class="bar-fill" style="width: ${percentage}%">
+                        <span class="bar-value">${formatNumber(totalTokens)}</span>
+                      </div>
+                    </div>
+                    <div class="bar-total">$${(agent.tokenUsage?.estimatedCost || 0).toFixed(4)}</div>
+                  </div>
+                `;
+              }).join('')}
             </div>
           </div>
-          <div class="metrics-grid">
-            <div class="metric-item">
-              <div class="metric-icon">💾</div>
-              <div class="metric-info">
-                <div class="metric-label">Memory Usage</div>
-                <div class="metric-value">~${Math.round(stats.total * 50)}MB</div>
-              </div>
-            </div>
-            <div class="metric-item">
-              <div class="metric-icon">📊</div>
-              <div class="metric-info">
-                <div class="metric-label">Completion Rate</div>
-                <div class="metric-value">${stats.total > 0 ? Math.round(stats.completed / stats.total * 100) : 0}%</div>
-              </div>
-            </div>
-            <div class="metric-item">
-              <div class="metric-icon">🔄</div>
-              <div class="metric-info">
-                <div class="metric-label">Error Rate</div>
-                <div class="metric-value">${agents.filter(a => a.state === 'Error').length} errors</div>
-              </div>
-            </div>
+        </div>
+
+        <div class="section fade-in">
+          <div class="section-header">
+            <h2 class="section-title">모든 에이전트</h2>
+          </div>
+          <div class="agents-grid">
+            ${sortedAgents.map(agent => renderAgentCard(agent)).join('')}
           </div>
         </div>
       `;
     }
 
     /**
-     * Render project groups
+     * 에이전트 카드 렌더링
      */
-    function renderProjectGroups(groups) {
-      return `
-        <div class="project-groups">
-          ${groups.map((group, index) => `
-            <div class="project-group" style="--index: ${index}">
-              <div class="project-header">
-                <div class="project-name">${group.name}</div>
-                <div class="project-stats">
-                  <span>👥 ${group.agents.length}</span>
-                  <span>⚡ ${group.active}</span>
-                  <span>✅ ${group.completed}</span>
-                </div>
-              </div>
-              <div class="timeline">
-                ${group.agents.map(agent => renderAgentTimelineItem(agent)).join('')}
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `;
-    }
-
-    /**
-     * Render a single agent timeline item
-     */
-    function renderAgentTimelineItem(agent) {
-      const stateClass = `state-${agent.status.toLowerCase()}`;
-      const typeClass = agent.metadata?.isSubagent ? 'type-subagent' : agent.metadata?.isTeammate ? 'type-teammate' : 'type-main';
-      const typeLabel = agent.metadata?.isSubagent ? 'Sub' : agent.metadata?.isTeammate ? 'Team' : 'Main';
+    function renderAgentCard(agent) {
+      const statusClass = getStatusClass(agent.status);
+      const statusText = getStatusText(agent.status);
+      const typeBadge = getTypeBadge(agent);
       const elapsed = formatTime(agent.timing?.elapsed || 0);
+      const inputTokens = agent.tokenUsage?.inputTokens || 0;
+      const outputTokens = agent.tokenUsage?.outputTokens || 0;
+      const totalTokens = inputTokens + outputTokens;
+      const cost = agent.tokenUsage?.estimatedCost || 0;
+      const project = agent.projectPath?.split('/').pop() || 'Default';
+      const model = agent.model || 'Unknown';
 
       return `
-        <div class="agent-timeline-item ${stateClass}">
-          <div class="agent-info">
+        <div class="agent-card ${statusClass} fade-in">
+          <div class="agent-header">
             <div class="agent-name">
-              ${agent.name || 'Agent'}
-              <span class="type-badge ${typeClass}">${typeLabel}</span>
+              <span>${agent.name || 'Agent'}</span>
+              ${typeBadge}
             </div>
-            <div class="agent-state">${statusToKorean(agent.status)}</div>
+            <div class="agent-status ${statusClass}">${statusText}</div>
           </div>
-          <div class="agent-meta">
-            <span>🕐 ${elapsed}</span>
-            <span>🆔 ${agent.id.slice(0, 8)}...</span>
+          <div class="agent-body">
+            <div class="agent-row">
+              <span class="agent-label">ID:</span>
+              <span class="agent-id">${agent.sessionId.slice(0, 8)}...</span>
+            </div>
+            <div class="agent-row">
+              <span class="agent-label">프로젝트:</span>
+              <span>${project}</span>
+            </div>
+            <div class="agent-row">
+              <span class="agent-label">모델:</span>
+              <span>${model}</span>
+            </div>
+          </div>
+          <div class="agent-footer">
+            <div class="agent-tokens">
+              <div class="token-item">
+                <span>📥</span>
+                <span class="token-value">${formatNumber(inputTokens)}</span>
+              </div>
+              <div class="token-item">
+                <span>📤</span>
+                <span class="token-value">${formatNumber(outputTokens)}</span>
+              </div>
+              <div class="token-item">
+                <span>💰</span>
+                <span class="token-value">$${cost.toFixed(4)}</span>
+              </div>
+            </div>
+            <div class="agent-time">⏱️ ${elapsed}</div>
           </div>
         </div>
       `;
     }
 
     /**
-     * Format milliseconds to readable time
+     * 빈 상태 렌더링
+     */
+    function renderEmpty() {
+      elements.mainContent.innerHTML = `
+        <div class="empty-state fade-in">
+          <div class="empty-state-icon">😴</div>
+          <div class="empty-state-title">대기 중</div>
+          <div class="empty-state-text">현재 작업 중인 에이전트가 없습니다.</div>
+          <div class="empty-state-text" style="font-size: 0.875rem; margin-top: 8px;">
+            Claude CLI에서 작업을 시작하면 자동으로 표시됩니다
+          </div>
+        </div>
+      `;
+    }
+
+    /**
+     * 상태 클래스 반환
+     */
+    function getStatusClass(status) {
+      const statusMap = {
+        'working': 'working',
+        'thinking': 'thinking',
+        'waiting': 'waiting',
+        'done': 'done',
+        'completed': 'done',
+        'help': 'help',
+        'error': 'error'
+      };
+      return statusMap[status] || 'waiting';
+    }
+
+    /**
+     * 상태 텍스트 반환
+     */
+    function getStatusText(status) {
+      const statusMap = {
+        'working': '작업 중',
+        'thinking': '생각 중',
+        'waiting': '대기 중',
+        'done': '완료',
+        'completed': '완료',
+        'help': '도움 필요',
+        'error': '에러'
+      };
+      return statusMap[status] || status;
+    }
+
+    /**
+     * 타입 뱃지 반환
+     */
+    function getTypeBadge(agent) {
+      if (agent.metadata?.isSubagent) {
+        return '<span class="type-badge subagent">Sub</span>';
+      } else if (agent.metadata?.isTeammate) {
+        return '<span class="type-badge teammate">Team</span>';
+      } else {
+        return '<span class="type-badge main">Main</span>';
+      }
+    }
+
+    /**
+     * 시간 포맷
      */
     function formatTime(ms) {
       const totalSeconds = Math.floor(ms / 1000);
@@ -664,24 +1178,49 @@
     }
 
     /**
-     * Convert English status to Korean
+     * 숫자 포맷
      */
-    function statusToKorean(status) {
-      const statusMap = {
-        'working': '작업 중',
-        'thinking': '생각 중',
-        'completed': '완료',
-        'done': '완료',
-        'waiting': '대기 중',
-        'error': '에러',
-        'help': '도움 필요',
-        'offline': '오프라인',
-        'idle': '대기 중'
-      };
-      return statusMap[status] || status;
+    function formatNumber(num) {
+      if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+      } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+      }
+      return num.toString();
     }
 
-    // Start when DOM is ready
+    /**
+     * 네비게이션 초기화
+     */
+    function initNavigation() {
+      const navItems = document.querySelectorAll('.nav-item');
+      navItems.forEach(item => {
+        item.addEventListener('click', () => {
+          navItems.forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+          state.currentView = item.dataset.view;
+          render();
+        });
+      });
+    }
+
+    /**
+     * 초기화
+     */
+    function init() {
+      console.log('[Dashboard] 초기화 시작...');
+
+      // 네비게이션 초기화
+      initNavigation();
+
+      // SSE 연결
+      connectSSE();
+
+      // 빈 상태 렌더링 (초기)
+      renderEmpty();
+    }
+
+    // DOM 로드 시 초기화
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', init);
     } else {

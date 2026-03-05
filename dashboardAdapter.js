@@ -84,11 +84,14 @@ function adaptAgentToDashboard(pixelAgent) {
     project: extractProjectName(pixelAgent.projectPath),
     status: mapPixelStateToDashboardState(pixelAgent.state),
     type: determineAgentType(pixelAgent),
+    model: pixelAgent.model || null,
+    tokenUsage: pixelAgent.tokenUsage || { inputTokens: 0, outputTokens: 0, estimatedCost: 0 },
     metadata: {
       isSubagent: pixelAgent.isSubagent || false,
       isTeammate: pixelAgent.isTeammate || false,
       projectPath: pixelAgent.projectPath || '',
       parentId: pixelAgent.parentId || null,
+      permissionMode: pixelAgent.permissionMode || null,
       source: 'pixel-agent-desk'
     },
     timing: {
