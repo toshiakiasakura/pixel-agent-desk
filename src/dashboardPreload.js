@@ -19,12 +19,6 @@ contextBridge.exposeInMainWorld('dashboardAPI', {
     });
   },
 
-  // Get auth token (legacy, not used anymore)
-  getAuthToken: () => '',
-
-  // Get source (legacy, not used anymore)
-  getSource: () => 'pixel-agent-desk',
-
   // Listen for initial data
   onInitialData: (callback) => {
     const listener = (event, data) => callback(data);

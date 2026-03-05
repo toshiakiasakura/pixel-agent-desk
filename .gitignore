@@ -22,5 +22,11 @@ debug_payload.txt
 test.txt
 NUL
 
+# Test coverage
+coverage/
+
+# Removed subproject (prevent re-creation)
+pixel_office/
+
 # Memory (if using auto memory)
 .claude/memory/

@@ -9,12 +9,12 @@
 var officeSkinImages = {}; // filename → Image
 
 function loadAllOfficeSkins() {
-  var ts = Date.now();
+  const ts = Date.now();
   officeSkinImages = {};
-  var promises = [];
-  for (var i = 0; i < AVATAR_FILES.length; i++) {
+  const promises = [];
+  for (let i = 0; i < AVATAR_FILES.length; i++) {
     (function (filename) {
-      var img = new Image();
+      const img = new Image();
       img.src = '/public/characters/' + filename + '?v=' + ts;
       officeSkinImages[filename] = img;
       promises.push(new Promise(function (resolve) {
@@ -35,15 +35,15 @@ function getOfficeSkinImage(avatarFile) {
 }
 
 function drawOfficeSprite(ctx, agent) {
-  var img = getOfficeSkinImage(agent.avatarFile);
+  const img = getOfficeSkinImage(agent.avatarFile);
   if (!img || !img.complete || img.naturalWidth === 0) return;
 
-  var frames = SPRITE_FRAMES[agent.currentAnim];
+  const frames = SPRITE_FRAMES[agent.currentAnim];
   if (!frames) return;
-  var frameIdx = frames[agent.animFrame % frames.length];
+  const frameIdx = frames[agent.animFrame % frames.length];
 
-  var sx = (frameIdx % OFFICE.COLS) * OFFICE.FRAME_W;
-  var sy = Math.floor(frameIdx / OFFICE.COLS) * OFFICE.FRAME_H;
+  const sx = (frameIdx % OFFICE.COLS) * OFFICE.FRAME_W;
+  const sy = Math.floor(frameIdx / OFFICE.COLS) * OFFICE.FRAME_H;
 
   ctx.drawImage(
     img,
@@ -58,7 +58,7 @@ function tickOfficeAnimation(agent, deltaMs) {
   agent.animTimer += deltaMs;
   if (agent.animTimer >= OFFICE.ANIM_INTERVAL) {
     agent.animTimer -= OFFICE.ANIM_INTERVAL;
-    var frames = SPRITE_FRAMES[agent.currentAnim];
+    const frames = SPRITE_FRAMES[agent.currentAnim];
     if (frames) {
       agent.animFrame = (agent.animFrame + 1) % frames.length;
     }

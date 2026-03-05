@@ -23,34 +23,7 @@ const ErrorSeverity = {
   INFO: 'info'         // 정보성
 };
 
-// 복구 액션 타입
-const RecoveryActionType = {
-  RETRY: 'retry',
-  SKIP: 'skip',
-  RESET: 'reset',
-  OPEN_SETTINGS: 'open_settings',
-  VIEW_LOGS: 'view_logs',
-  COPY_ERROR: 'copy_error',
-  OPEN_DOCS: 'open_docs',
-  REPORT_BUG: 'report_bug'
-};
-
-// 표준 에러 코드
-const ErrorCodes = {
-  SETTINGS_NOT_FOUND: 'E001',
-  SETTINGS_PARSE_ERROR: 'E002',
-  AVATAR_LOAD_FAILED: 'E003',
-  PORT_CONFLICT: 'E004',
-  FOCUS_FAILED: 'E005',
-  HOOK_SERVER_ERROR: 'E006',
-  LOG_WRITE_FAILED: 'E007',
-  AGENT_NOT_FOUND: 'E008',
-  AGENTS_LOAD_FAILED: 'E009'
-};
-
 module.exports = {
   ErrorCategory,
-  ErrorSeverity,
-  RecoveryActionType,
-  ErrorCodes
+  ErrorSeverity
 };

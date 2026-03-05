@@ -11,6 +11,7 @@
 - ✅ **Liveness 간소화:** 타이머 기반 정리 제거, PID 기반 즉시 판단 (2초 주기)
 - ✅ **리팩토링:** src/ 폴더 구조 정리, main.js→7개 모듈 분할, renderer.js→7개 모듈 분할
 - ✅ **Virtual Office:** 대시보드에 2D 픽셀 아트 가상 오피스 탭 추가 (9개 JS 모듈, A* 패스파인딩, 상태→존 매핑)
+- ✅ **레거시 코드 정리:** dead code 제거, MODEL_PRICING 통합(pricing.js), install.js 중복 제거, hooks.jsonl 레거시 코드 제거, office 모듈 var→const/let 전환
 
 ## TODO
 - **회사 홈페이지 링크 추가:** About 다이얼로그, 트레이 메뉴, 대시보드 푸터 등에 회사 홈페이지 링크 삽입 (광고 아님, 제작자 정보 수준)
@@ -121,12 +122,13 @@ public/characters/
 | `src/errorHandler.js` | 에러 캡처 & 분류 | 에러 코드 E001~E010 체계 사용 |
 | `src/dashboardAdapter.js` | AgentManager → Dashboard 포맷 변환 | STATE_MAP 변경 시 dashboard.html과 동기화 |
 | `src/dashboard-server.js` | REST API + WebSocket 대시보드 서버 | 포트 3000 |
+| `src/pricing.js` | MODEL_PRICING, DEFAULT_PRICING, roundCost | hookProcessor.js와 sessionScanner.js에서 공유 |
 | `src/utils.js` | 유틸리티 함수 | 순수 함수 모듈 |
 | `src/preload.js` | Electron IPC 브릿지 | 채널명 변경 시 renderer와 동기화 필수 |
 | `src/dashboardPreload.js` | 대시보드 IPC 브릿지 | |
-| `src/hook.js` | Claude CLI stdin → HTTP POST 브릿지 | 에러 시 전체 파이프라인 중단됨 |
+| `src/hook.js` | Claude CLI stdin → HTTP POST 브릿지 (command 타입 폴백용) | HTTP 훅이 주 경로, 이 스크립트는 command 훅 폴백 |
 | `src/sessionend_hook.js` | SessionEnd JSONL 직접 기록 | transcript_path에서 sessionId 파싱 |
-| `src/install.js` | npm install 시 훅 자동 등록 | postinstall 스크립트 |
+| `src/install.js` | npm install 시 훅 자동 등록 | hookRegistration.js에 위임, postinstall 스크립트 |
 
 ## 상태 모델
 

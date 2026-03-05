@@ -102,11 +102,6 @@ function registerClaudeHooks(debugLog) {
     ];
   }
 
-  // 이전 버전에서 등록되었을 수 있는 유효하지 않은 훅 제거
-  if (config.hooks['InstructionsLoaded']) {
-    delete config.hooks['InstructionsLoaded'];
-  }
-
   if (writeClaudeConfig(config, debugLog)) {
     debugLog('[Hook] ✅ Claude CLI 훅 등록 완료!');
     console.log('\n✅ Claude CLI 훅이 자동 등록되었습니다.');

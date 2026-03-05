@@ -106,57 +106,10 @@ function adaptAgentToDashboard(pixelAgent) {
   };
 }
 
-/**
- * Adapt multiple Pixel Agent Desk agents to Dashboard format
- * @param {Array<Object>} pixelAgents - Array of Pixel Agent Desk agent objects
- * @returns {Array<Object>} Array of Dashboard formatted agents
- */
-function adaptAgentsToDashboard(pixelAgents) {
-  if (!Array.isArray(pixelAgents)) return [];
-  return pixelAgents.map(adaptAgentToDashboard);
-}
-
-/**
- * Validate agent data before sending to Dashboard
- * @param {Object} agent - Agent object to validate
- * @returns {boolean} True if agent data is valid
- */
-function validateAgentData(agent) {
-  if (!agent) return false;
-  if (!agent.id && !agent.sessionId) return false;
-  return true;
-}
-
-/**
- * Sanitize agent data to remove potentially sensitive information
- * @param {Object} agent - Agent object to sanitize
- * @returns {Object} Sanitized agent object
- */
-function sanitizeAgentData(agent) {
-  const sanitized = { ...agent };
-
-  // Remove sensitive fields if they exist
-  delete sanitized.jsonlPath;
-  delete sanitized.pid;
-
-  // Ensure metadata exists
-  if (!sanitized.metadata) {
-    sanitized.metadata = {};
-  }
-
-  return sanitized;
-}
-
 module.exports = {
   adaptAgentToDashboard,
-  adaptAgentsToDashboard,
   mapPixelStateToDashboardState,
   extractProjectName,
-  determineAgentType,
-  calculateElapsedTime,
-  isAgentActive,
-  validateAgentData,
-  sanitizeAgentData,
   STATE_MAP,
   DEFAULT_STATE
 };

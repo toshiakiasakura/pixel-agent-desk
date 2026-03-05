@@ -12,47 +12,47 @@ var officeCoords = {
 };
 
 async function parseMapCoordinates(bgW, bgH) {
-  var img = await loadOfficeImage('/public/office/map/office_xy.webp?t=' + Date.now());
-  var canvas = document.createElement('canvas');
+  const img = await loadOfficeImage('/public/office/map/office_xy.webp?t=' + Date.now());
+  const canvas = document.createElement('canvas');
   canvas.width = img.naturalWidth;
   canvas.height = img.naturalHeight;
-  var ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d');
   ctx.drawImage(img, 0, 0);
 
-  var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  var data = imageData.data;
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
 
-  var scaleX = bgW / canvas.width;
-  var scaleY = bgH / canvas.height;
+  const scaleX = bgW / canvas.width;
+  const scaleY = bgH / canvas.height;
 
-  var THRESHOLD = 80;
-  var TILE = OFFICE.TILE_SIZE;
-  var tempIdle = [];
-  var tempDesk = [];
-  var tempMeeting = [];
-  var seenGrid = {};
+  const THRESHOLD = 80;
+  const TILE = OFFICE.TILE_SIZE;
+  const tempIdle = [];
+  const tempDesk = [];
+  const tempMeeting = [];
+  const seenGrid = {};
 
   function colorMatch(r, g, b, tr, tg, tb) {
     return Math.abs(r - tr) < THRESHOLD && Math.abs(g - tg) < THRESHOLD && Math.abs(b - tb) < THRESHOLD;
   }
 
-  for (var y = 0; y < canvas.height; y++) {
-    for (var x = 0; x < canvas.width; x++) {
-      var idx = (y * canvas.width + x) * 4;
-      var r = data[idx], g = data[idx + 1], b = data[idx + 2], a = data[idx + 3];
+  for (let y = 0; y < canvas.height; y++) {
+    for (let x = 0; x < canvas.width; x++) {
+      const idx = (y * canvas.width + x) * 4;
+      const r = data[idx], g = data[idx + 1], b = data[idx + 2], a = data[idx + 3];
       if (a < 128) continue;
 
-      var mapX = x * scaleX;
-      var mapY = y * scaleY;
-      var gx = Math.floor(mapX / TILE);
-      var gy = Math.floor(mapY / TILE);
-      var key = gx + ',' + gy;
+      const mapX = x * scaleX;
+      const mapY = y * scaleY;
+      const gx = Math.floor(mapX / TILE);
+      const gy = Math.floor(mapY / TILE);
+      const key = gx + ',' + gy;
 
       if (seenGrid[key]) continue;
       seenGrid[key] = true;
 
-      var finalX = gx * TILE + 16;
-      var finalY = gy * TILE + 32;
+      const finalX = gx * TILE + 16;
+      const finalY = gy * TILE + 32;
 
       if (colorMatch(r, g, b, 0, 255, 0) || colorMatch(r, g, b, 0, 0, 0)) {
         tempIdle.push({ x: finalX, y: finalY });
@@ -64,7 +64,7 @@ async function parseMapCoordinates(bgW, bgH) {
     }
   }
 
-  var globalId = 0;
+  let globalId = 0;
   officeCoords.desk = [];
   officeCoords.idle = [];
 
@@ -83,46 +83,46 @@ async function parseMapCoordinates(bgW, bgH) {
 }
 
 async function parseObjectCoordinates(bgW, bgH) {
-  var img = await loadOfficeImage('/public/office/ojects/office_laptop.webp?t=' + Date.now());
-  var canvas = document.createElement('canvas');
+  const img = await loadOfficeImage('/public/office/ojects/office_laptop.webp?t=' + Date.now());
+  const canvas = document.createElement('canvas');
   canvas.width = img.naturalWidth;
   canvas.height = img.naturalHeight;
-  var ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d');
   ctx.drawImage(img, 0, 0);
 
-  var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  var data = imageData.data;
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
 
-  var scaleX = bgW / canvas.width;
-  var scaleY = bgH / canvas.height;
+  const scaleX = bgW / canvas.width;
+  const scaleY = bgH / canvas.height;
 
-  var THRESHOLD = 80;
-  var TILE = OFFICE.TILE_SIZE;
-  var spots = [];
-  var seenGrid = {};
+  const THRESHOLD = 80;
+  const TILE = OFFICE.TILE_SIZE;
+  const spots = [];
+  const seenGrid = {};
 
   function colorMatch(r, g, b, tr, tg, tb) {
     return Math.abs(r - tr) < THRESHOLD && Math.abs(g - tg) < THRESHOLD && Math.abs(b - tb) < THRESHOLD;
   }
 
-  for (var y = 0; y < canvas.height; y++) {
-    for (var x = 0; x < canvas.width; x++) {
-      var idx = (y * canvas.width + x) * 4;
-      var r = data[idx], g = data[idx + 1], b = data[idx + 2], a = data[idx + 3];
+  for (let y = 0; y < canvas.height; y++) {
+    for (let x = 0; x < canvas.width; x++) {
+      const idx = (y * canvas.width + x) * 4;
+      const r = data[idx], g = data[idx + 1], b = data[idx + 2], a = data[idx + 3];
       if (a < 128) continue;
 
-      var dir = null;
+      let dir = null;
       if (colorMatch(r, g, b, 255, 128, 0)) dir = 'left';
       else if (colorMatch(r, g, b, 0, 255, 255)) dir = 'down';
       else if (colorMatch(r, g, b, 255, 0, 255)) dir = 'up';
       else if (colorMatch(r, g, b, 0, 0, 255)) dir = 'right';
       else continue;
 
-      var mapX = x * scaleX;
-      var mapY = y * scaleY;
-      var gx = Math.floor(mapX / TILE);
-      var gy = Math.floor(mapY / TILE);
-      var key = gx + ',' + gy;
+      const mapX = x * scaleX;
+      const mapY = y * scaleY;
+      const gx = Math.floor(mapX / TILE);
+      const gy = Math.floor(mapY / TILE);
+      const key = gx + ',' + gy;
       if (seenGrid[key]) continue;
       seenGrid[key] = true;
 

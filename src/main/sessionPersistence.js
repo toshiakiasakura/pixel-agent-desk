@@ -87,15 +87,6 @@ function recoverExistingSessions({ agentManager, sessionPids, firstPreToolUseDon
     debugLog(`[Recover] Error reading or parsing state.json: ${e.message}`);
   }
 
-  // 이전 버전에서 남은 hooks.jsonl 파일 정리
-  const hooksPath = path.join(os.homedir(), '.pixel-agent-desk', 'hooks.jsonl');
-  if (fs.existsSync(hooksPath)) {
-    try {
-      fs.writeFileSync(hooksPath, '');
-      debugLog('[Recover] Cleared legacy hooks.jsonl');
-    } catch (e) { }
-  }
-
   // 복구된 에이전트 state.json 초기화
   try {
     fs.writeFileSync(statePath, JSON.stringify({ agents: [], pids: [] }, null, 2), 'utf-8');

@@ -13,7 +13,7 @@ async function initOffice() {
     return;
   }
 
-  var canvas = document.getElementById('office-canvas');
+  const canvas = document.getElementById('office-canvas');
   if (!canvas) return;
 
   try {
@@ -25,8 +25,8 @@ async function initOffice() {
 
   // Load existing agents
   try {
-    var res = await fetch('/api/agents');
-    var agents = await res.json();
+    const res = await fetch('/api/agents');
+    const agents = await res.json();
     agents.forEach(function (a) {
       officeCharacters.addCharacter(a);
     });

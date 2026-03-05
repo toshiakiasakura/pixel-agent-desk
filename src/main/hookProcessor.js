@@ -4,6 +4,7 @@
  */
 
 const path = require('path');
+const { MODEL_PRICING, DEFAULT_PRICING, roundCost } = require('../pricing');
 
 function createHookProcessor({ agentManager, sessionPids, debugLog, detectClaudePidByTranscript }) {
   // 내부 상태
@@ -116,20 +117,11 @@ function createHookProcessor({ agentManager, sessionPids, debugLog, detectClaude
               const cur = agent.tokenUsage || { inputTokens: 0, outputTokens: 0, estimatedCost: 0 };
               const inputTokens = cur.inputTokens + (tokenUsage.input_tokens || 0);
               const outputTokens = cur.outputTokens + (tokenUsage.output_tokens || 0);
-              const MODEL_PRICING = {
-                'claude-opus-4-5': { input: 15 / 1_000_000, output: 75 / 1_000_000 },
-                'claude-sonnet-4-5': { input: 3 / 1_000_000, output: 15 / 1_000_000 },
-                'claude-haiku-4-5': { input: 0.8 / 1_000_000, output: 4 / 1_000_000 },
-                'claude-opus-4-6': { input: 15 / 1_000_000, output: 75 / 1_000_000 },
-                'claude-sonnet-4-6': { input: 3 / 1_000_000, output: 15 / 1_000_000 },
-                'claude-haiku-4-6': { input: 0.8 / 1_000_000, output: 4 / 1_000_000 },
-              };
-              const DEFAULT_PRICING = { input: 3 / 1_000_000, output: 15 / 1_000_000 };
               const pricing = MODEL_PRICING[agent.model] || DEFAULT_PRICING;
               const estimatedCost = inputTokens * pricing.input + outputTokens * pricing.output;
               agentManager.updateAgent({
                 ...agent, sessionId, state: 'Thinking', currentTool: null,
-                tokenUsage: { inputTokens, outputTokens, estimatedCost: Math.round(estimatedCost * 10000) / 10000 }
+                tokenUsage: { inputTokens, outputTokens, estimatedCost: roundCost(estimatedCost) }
               }, 'hook');
             } else {
               agentManager.updateAgent({ ...agent, sessionId, state: 'Thinking', currentTool: null }, 'hook');

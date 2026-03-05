@@ -17,13 +17,13 @@ var officeCharacters = {
     }
 
     // Map dashboard status to office state
-    var officeState = this._mapStatus(agentData.status);
+    const officeState = this._mapStatus(agentData.status);
 
     // Deterministic avatar from agentId (synced with taskbar renderer)
-    var avatarIdx = avatarIndexFromId(agentData.id);
-    var avatarFile = AVATAR_FILES[avatarIdx];
+    const avatarIdx = avatarIndexFromId(agentData.id);
+    const avatarFile = AVATAR_FILES[avatarIdx];
 
-    var char = {
+    const char = {
       id: agentData.id,
       x: 100 + Math.random() * 100,
       y: 200 + Math.random() * 100,
@@ -64,14 +64,14 @@ var officeCharacters = {
   },
 
   updateCharacter: function (agentData) {
-    var char = this.characters.get(agentData.id);
+    const char = this.characters.get(agentData.id);
     if (!char) {
       this.addCharacter(agentData);
       return;
     }
 
-    var oldState = char.agentState;
-    var newState = this._mapStatus(agentData.status);
+    const oldState = char.agentState;
+    const newState = this._mapStatus(agentData.status);
     char.agentState = newState;
     char.role = agentData.name || char.role;
     char.metadata.name = agentData.name || char.metadata.name;
@@ -83,8 +83,8 @@ var officeCharacters = {
 
     // State change → zone transition
     if (oldState !== newState) {
-      var oldZone = STATE_ZONE_MAP[oldState] || 'idle';
-      var newZone = STATE_ZONE_MAP[newState] || 'idle';
+      const oldZone = STATE_ZONE_MAP[oldState] || 'idle';
+      const newZone = STATE_ZONE_MAP[newState] || 'idle';
 
       if (newZone === 'desk' && char.deskIndex === undefined) {
         this.assignDesk(agentData.id);
@@ -110,13 +110,13 @@ var officeCharacters = {
   },
 
   assignDesk: function (agentId) {
-    var char = this.characters.get(agentId);
+    const char = this.characters.get(agentId);
     if (!char || char.deskIndex !== undefined) return;
 
     // Find unoccupied desk
-    var usedDesks = new Set(this.seatAssignments.keys());
-    var deskCoords = officeCoords.desk || [];
-    for (var i = 0; i < deskCoords.length; i++) {
+    const usedDesks = new Set(this.seatAssignments.keys());
+    const deskCoords = officeCoords.desk || [];
+    for (let i = 0; i < deskCoords.length; i++) {
       if (!usedDesks.has(i)) {
         char.deskIndex = i;
         this.seatAssignments.set(i, agentId);
@@ -126,7 +126,7 @@ var officeCharacters = {
   },
 
   releaseDesk: function (agentId) {
-    var char = this.characters.get(agentId);
+    const char = this.characters.get(agentId);
     if (char && char.deskIndex !== undefined) {
       this.seatAssignments.delete(char.deskIndex);
       char.deskIndex = undefined;
@@ -134,7 +134,7 @@ var officeCharacters = {
   },
 
   updateAll: function (deltaSec, deltaMs) {
-    var self = this;
+    const self = this;
     this.characters.forEach(function (char) {
       self._updateTarget(char);
       self._updateMovement(char, deltaSec);
@@ -150,7 +150,7 @@ var officeCharacters = {
   },
 
   _updateTarget: function (char) {
-    var coords = officeCoords;
+    const coords = officeCoords;
     if (!coords || !coords.desk || !coords.idle) return;
 
     // WORKING / THINKING / HELP / ERROR → desk
@@ -158,17 +158,17 @@ var officeCharacters = {
         char.agentState === 'error' || char.agentState === 'help') {
       char.restTimer = 0;
       if (char.deskIndex !== undefined && char.deskIndex < coords.desk.length) {
-        var target = coords.desk[char.deskIndex];
-        var tx = Math.floor(target.x);
-        var ty = Math.floor(target.y);
+        const target = coords.desk[char.deskIndex];
+        const tx = Math.floor(target.x);
+        const ty = Math.floor(target.y);
 
         if (char.path.length === 0 && Math.floor(char.x) === tx && Math.floor(char.y) === ty) return;
         if (char.path.length > 0) {
-          var last = char.path[char.path.length - 1];
+          const last = char.path[char.path.length - 1];
           if (Math.floor(last.x) === tx && Math.floor(last.y) === ty) return;
         }
 
-        var found = officePathfinder.findPath(char.x, char.y, tx, ty);
+        const found = officePathfinder.findPath(char.x, char.y, tx, ty);
         char.path = found;
         char.pathIndex = 0;
       }
@@ -178,48 +178,45 @@ var officeCharacters = {
     // IDLE / WAITING / DONE → idle zone
     if (char.path.length > 0 && char.pathIndex < char.path.length) return;
 
-    var isAtIdle = coords.idle.some(function (p) {
+    const isAtIdle = coords.idle.some(function (p) {
       return Math.abs(p.x - char.x) < 5 && Math.abs(p.y - char.y) < 5;
     });
 
-    if (isAtIdle) {
-      if (Math.random() < 0.0005) { /* rarely wander */ }
-      else return;
-    }
+    if (isAtIdle) return;
 
     // Find unoccupied idle spot
-    var occupied = {};
-    var self = this;
+    const occupied = {};
+    const self = this;
     this.characters.forEach(function (a) {
       if (a.id === char.id) return;
-      var ax = Math.floor(a.x), ay = Math.floor(a.y);
+      let ax = Math.floor(a.x), ay = Math.floor(a.y);
       if (a.path.length > 0) {
-        var t = a.path[a.path.length - 1];
+        const t = a.path[a.path.length - 1];
         ax = Math.floor(t.x);
         ay = Math.floor(t.y);
       }
       occupied[ax + ',' + ay] = true;
     });
 
-    var valid = coords.idle.filter(function (p) {
+    const valid = coords.idle.filter(function (p) {
       return !occupied[Math.floor(p.x) + ',' + Math.floor(p.y)];
     });
 
     if (valid.length > 0) {
-      var dest = valid[Math.floor(Math.random() * valid.length)];
+      const dest = valid[Math.floor(Math.random() * valid.length)];
       char.path = officePathfinder.findPath(char.x, char.y, dest.x, dest.y);
       char.pathIndex = 0;
     }
   },
 
   _updateMovement: function (char, deltaSec) {
-    var isArrived = char.path.length === 0 || char.pathIndex >= char.path.length;
+    const isArrived = char.path.length === 0 || char.pathIndex >= char.path.length;
 
     if (isArrived) {
       // Apply seat config
-      var allSpots = (officeCoords.desk || []).concat(officeCoords.idle || []);
-      var currentSpot = null;
-      for (var i = 0; i < allSpots.length; i++) {
+      const allSpots = (officeCoords.desk || []).concat(officeCoords.idle || []);
+      let currentSpot = null;
+      for (let i = 0; i < allSpots.length; i++) {
         if (Math.abs(allSpots[i].x - char.x) < 5 && Math.abs(allSpots[i].y - char.y) < 5) {
           currentSpot = allSpots[i];
           break;
@@ -229,7 +226,7 @@ var officeCharacters = {
       if (char.agentState === 'done' || char.agentState === 'completed') {
         char.currentAnim = 'dance';
       } else if (char.agentState !== 'error') {
-        var config = currentSpot ? getSeatConfig(currentSpot.id) : { dir: 'down', animType: 'sit' };
+        const config = currentSpot ? getSeatConfig(currentSpot.id) : { dir: 'down', animType: 'sit' };
         char.facingDir = config.dir;
         if (config.animType === 'sit') {
           char.currentAnim = 'sit_' + config.dir;
@@ -243,27 +240,27 @@ var officeCharacters = {
     }
 
     // Move along path
-    var target = char.path[char.pathIndex];
-    var dx = target.x - char.x;
-    var dy = target.y - char.y;
-    var dist = Math.sqrt(dx * dx + dy * dy);
+    const target = char.path[char.pathIndex];
+    const dx = target.x - char.x;
+    const dy = target.y - char.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
 
     if (dist < OFFICE.ARRIVE_THRESHOLD) {
       char.x = target.x;
       char.y = target.y;
       char.pathIndex++;
     } else {
-      var speed = OFFICE.MOVE_SPEED * deltaSec;
+      const speed = OFFICE.MOVE_SPEED * deltaSec;
       char.x += (dx / dist) * speed;
       char.y += (dy / dist) * speed;
-      var dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+      const dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
       char.facingDir = dir;
       char.currentAnim = animKeyFromDir(dir, true);
     }
   },
 
   _mapStatus: function (dashboardStatus) {
-    var map = {
+    const map = {
       'working': 'working',
       'thinking': 'thinking',
       'waiting': 'idle',
@@ -276,9 +273,9 @@ var officeCharacters = {
   },
 
   _setBubble: function (char, agentData) {
-    var text = null;
-    var icon = null;
-    var status = agentData.status || char.metadata.status;
+    let text = null;
+    let icon = null;
+    const status = agentData.status || char.metadata.status;
 
     if (status === 'working' && agentData.currentTool) {
       text = agentData.currentTool;

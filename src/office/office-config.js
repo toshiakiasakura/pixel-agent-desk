@@ -103,9 +103,9 @@ var AVATAR_FILES = [
  * Used by both taskbar renderer and office to sync avatars.
  */
 function avatarIndexFromId(id) {
-  var hash = 0;
-  var str = id || '';
-  for (var i = 0; i < str.length; i++) {
+  let hash = 0;
+  const str = id || '';
+  for (let i = 0; i < str.length; i++) {
     hash = ((hash << 5) - hash) + str.charCodeAt(i);
     hash |= 0; // 32-bit int
   }

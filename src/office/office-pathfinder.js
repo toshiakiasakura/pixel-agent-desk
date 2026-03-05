@@ -11,30 +11,30 @@ var officePathfinder = {
   gridH: 0,
 
   async init(bgW, bgH) {
-    var TILE = OFFICE.TILE_SIZE;
-    var img = await loadOfficeImage('/public/office/map/office_collision.webp?t=' + Date.now());
-    var canvas = document.createElement('canvas');
+    const TILE = OFFICE.TILE_SIZE;
+    const img = await loadOfficeImage('/public/office/map/office_collision.webp?t=' + Date.now());
+    const canvas = document.createElement('canvas');
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
-    var ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
     ctx.drawImage(img, 0, 0);
 
-    var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    var data = imageData.data;
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
 
     this.gridW = Math.ceil(bgW / TILE);
     this.gridH = Math.ceil(bgH / TILE);
 
-    var scaleX = canvas.width / bgW;
-    var scaleY = canvas.height / bgH;
+    const scaleX = canvas.width / bgW;
+    const scaleY = canvas.height / bgH;
 
     this.grid = [];
-    for (var gy = 0; gy < this.gridH; gy++) {
+    for (let gy = 0; gy < this.gridH; gy++) {
       this.grid[gy] = [];
-      for (var gx = 0; gx < this.gridW; gx++) {
-        var px = Math.floor((gx + 0.5) * TILE * scaleX);
-        var py = Math.floor((gy + 0.5) * TILE * scaleY);
-        var idx = (py * canvas.width + px) * 4;
+      for (let gx = 0; gx < this.gridW; gx++) {
+        const px = Math.floor((gx + 0.5) * TILE * scaleX);
+        const py = Math.floor((gy + 0.5) * TILE * scaleY);
+        const idx = (py * canvas.width + px) * 4;
         this.grid[gy][gx] = data[idx + 3] < 128; // transparent = walkable
       }
     }
@@ -47,9 +47,9 @@ var officePathfinder = {
   },
 
   findNearestWalkable(gx, gy) {
-    for (var r = 1; r < 10; r++) {
-      for (var dy = -r; dy <= r; dy++) {
-        for (var dx = -r; dx <= r; dx++) {
+    for (let r = 1; r < 10; r++) {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
           if (this.isWalkable(gx + dx, gy + dy)) return { x: gx + dx, y: gy + dy };
         }
       }
@@ -58,41 +58,41 @@ var officePathfinder = {
   },
 
   findPath(startX, startY, endX, endY) {
-    var TILE = OFFICE.TILE_SIZE;
+    const TILE = OFFICE.TILE_SIZE;
     if (this.gridW === 0) return [{ x: endX, y: endY }];
 
-    var sgx = Math.max(0, Math.min(this.gridW - 1, Math.floor(startX / TILE)));
-    var sgy = Math.max(0, Math.min(this.gridH - 1, Math.floor(startY / TILE)));
-    var egx = Math.max(0, Math.min(this.gridW - 1, Math.floor(endX / TILE)));
-    var egy = Math.max(0, Math.min(this.gridH - 1, Math.floor(endY / TILE)));
+    let sgx = Math.max(0, Math.min(this.gridW - 1, Math.floor(startX / TILE)));
+    let sgy = Math.max(0, Math.min(this.gridH - 1, Math.floor(startY / TILE)));
+    let egx = Math.max(0, Math.min(this.gridW - 1, Math.floor(endX / TILE)));
+    let egy = Math.max(0, Math.min(this.gridH - 1, Math.floor(endY / TILE)));
 
     if (!this.isWalkable(sgx, sgy)) {
-      var ns = this.findNearestWalkable(sgx, sgy);
+      const ns = this.findNearestWalkable(sgx, sgy);
       sgx = ns.x; sgy = ns.y;
     }
     if (!this.isWalkable(egx, egy)) {
-      var ne = this.findNearestWalkable(egx, egy);
+      const ne = this.findNearestWalkable(egx, egy);
       egx = ne.x; egy = ne.y;
     }
     if (sgx === egx && sgy === egy) return [{ x: endX, y: endY }];
 
     // A* search
-    var openSet = [];
-    var closedSet = {};
-    var h0 = Math.abs(sgx - egx) + Math.abs(sgy - egy);
+    const openSet = [];
+    const closedSet = {};
+    const h0 = Math.abs(sgx - egx) + Math.abs(sgy - egy);
     openSet.push({ x: sgx, y: sgy, g: 0, h: h0, f: h0, parent: null });
 
-    var dirs = [[0,-1],[0,1],[-1,0],[1,0],[-1,-1],[1,-1],[-1,1],[1,1]];
+    const dirs = [[0,-1],[0,1],[-1,0],[1,0],[-1,-1],[1,-1],[-1,1],[1,1]];
 
     while (openSet.length > 0) {
       openSet.sort(function (a, b) { return a.f - b.f; });
-      var current = openSet.shift();
-      var key = current.x + ',' + current.y;
+      const current = openSet.shift();
+      const key = current.x + ',' + current.y;
 
       if (current.x === egx && current.y === egy) {
         // reconstruct
-        var path = [];
-        var node = current;
+        const path = [];
+        let node = current;
         while (node) {
           path.unshift({ x: node.x * TILE + 16, y: node.y * TILE + 16 });
           node = node.parent;
@@ -106,18 +106,18 @@ var officePathfinder = {
 
       closedSet[key] = true;
 
-      for (var i = 0; i < dirs.length; i++) {
-        var dx = dirs[i][0], dy = dirs[i][1];
-        var nx = current.x + dx, ny = current.y + dy;
+      for (let i = 0; i < dirs.length; i++) {
+        const dx = dirs[i][0], dy = dirs[i][1];
+        const nx = current.x + dx, ny = current.y + dy;
         if (!this.isWalkable(nx, ny) || closedSet[nx + ',' + ny]) continue;
 
-        var cost = (dx !== 0 && dy !== 0) ? 1.4 : 1;
-        var g = current.g + cost;
-        var h = Math.abs(nx - egx) + Math.abs(ny - egy);
-        var f = g + h;
+        const cost = (dx !== 0 && dy !== 0) ? 1.4 : 1;
+        const g = current.g + cost;
+        const h = Math.abs(nx - egx) + Math.abs(ny - egy);
+        const f = g + h;
 
-        var existing = null;
-        for (var j = 0; j < openSet.length; j++) {
+        let existing = null;
+        for (let j = 0; j < openSet.length; j++) {
           if (openSet[j].x === nx && openSet[j].y === ny) { existing = openSet[j]; break; }
         }
         if (!existing) {

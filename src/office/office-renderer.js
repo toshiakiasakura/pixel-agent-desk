@@ -30,21 +30,21 @@ var officeRenderer = {
     await parseMapCoordinates(officeLayers.width, officeLayers.height);
 
     // 4. Load all skins + laptop images in parallel
-    var resMap = { down: 'front', up: 'back', left: 'left', right: 'right' };
-    var directions = ['down', 'up', 'left', 'right'];
-    var self = this;
-    var ts = Date.now();
+    const resMap = { down: 'front', up: 'back', left: 'left', right: 'right' };
+    const directions = ['down', 'up', 'left', 'right'];
+    const self = this;
+    const ts = Date.now();
 
-    var promises = [loadAllOfficeSkins()];
+    const promises = [loadAllOfficeSkins()];
     directions.forEach(function (d) {
       promises.push(new Promise(function (resolve) {
-        var img = new Image();
+        const img = new Image();
         img.src = '/public/office/ojects/office_laptop_' + resMap[d] + '_close.webp?v=' + ts;
         img.onload = function () { self.laptopImages[d] = img; resolve(); };
         img.onerror = function () { resolve(); };
       }));
       promises.push(new Promise(function (resolve) {
-        var img = new Image();
+        const img = new Image();
         img.src = '/public/office/ojects/office_laptop_' + resMap[d] + '_open.webp?v=' + ts;
         img.onload = function () { self.laptopOpenImages[d] = img; resolve(); };
         img.onerror = function () { resolve(); };
@@ -74,23 +74,23 @@ var officeRenderer = {
   },
 
   loop: function (now) {
-    var self = this;
+    const self = this;
     self.rafId = requestAnimationFrame(function (t) { self.loop(t); });
-    var deltaMs = Math.min(now - self.lastTime, 100);
+    const deltaMs = Math.min(now - self.lastTime, 100);
     self.lastTime = now;
     self.update(deltaMs);
     self.render();
   },
 
   update: function (deltaMs) {
-    var deltaSec = deltaMs / 1000;
+    const deltaSec = deltaMs / 1000;
     officeCharacters.updateAll(deltaSec, deltaMs);
     this.updateEffects(deltaMs);
   },
 
   render: function () {
     if (!this.ctx || !officeLayers.bgImage) return;
-    var ctx = this.ctx;
+    const ctx = this.ctx;
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -98,28 +98,28 @@ var officeRenderer = {
     ctx.drawImage(officeLayers.bgImage, 0, 0);
 
     // 2. Laptops
-    var laptopSpots = officeCoords.laptopSpots || [];
-    var chars = officeCharacters.getCharacterArray();
-    for (var i = 0; i < laptopSpots.length; i++) {
-      var spot = laptopSpots[i];
-      var seatId = LAPTOP_ID_MAP[i] !== undefined ? LAPTOP_ID_MAP[i] : i;
+    const laptopSpots = officeCoords.laptopSpots || [];
+    const chars = officeCharacters.getCharacterArray();
+    for (let i = 0; i < laptopSpots.length; i++) {
+      const spot = laptopSpots[i];
+      const seatId = LAPTOP_ID_MAP[i] !== undefined ? LAPTOP_ID_MAP[i] : i;
 
-      var isWorking = chars.some(function (a) {
+      const isWorking = chars.some(function (a) {
         return a.deskIndex === seatId && a.agentState === 'working';
       });
 
-      var img = isWorking ? this.laptopOpenImages[spot.dir] : this.laptopImages[spot.dir];
+      const img = isWorking ? this.laptopOpenImages[spot.dir] : this.laptopImages[spot.dir];
       if (img) ctx.drawImage(img, spot.x, spot.y);
     }
 
     // 3. Characters (Y-sorted)
-    var sorted = chars.slice().sort(function (a, b) { return a.y - b.y; });
-    var time = performance.now();
+    const sorted = chars.slice().sort(function (a, b) { return a.y - b.y; });
+    const time = performance.now();
 
-    for (var j = 0; j < sorted.length; j++) {
-      var agent = sorted[j];
-      var scaleY = 1.0;
-      var floatY = 0;
+    for (let j = 0; j < sorted.length; j++) {
+      const agent = sorted[j];
+      let scaleY = 1.0;
+      let floatY = 0;
 
       if (agent.agentState === 'working') {
         floatY = Math.sin(time * 0.01) * 3;
@@ -139,7 +139,7 @@ var officeRenderer = {
       drawOfficeSprite(ctx, agent);
       ctx.restore();
 
-      var headCorr = (1 - scaleY) * 40;
+      const headCorr = (1 - scaleY) * 40;
       drawOfficeNameTag(ctx, agent, floatY + headCorr);
       drawOfficeBubble(ctx, agent, floatY + headCorr);
     }
@@ -154,12 +154,12 @@ var officeRenderer = {
   },
 
   spawnEffect: function (type, x, y) {
-    var id = Math.random().toString(36).substr(2, 9);
-    var now = performance.now();
+    const id = Math.random().toString(36).substr(2, 9);
+    const now = performance.now();
 
     if (type === 'confetti') {
-      var colors = ['#ff4d4d', '#ffeb3b', '#4caf50', '#2196f3', '#e91e63', '#9c27b0'];
-      for (var i = 0; i < 20; i++) {
+      const colors = ['#ff4d4d', '#ffeb3b', '#4caf50', '#2196f3', '#e91e63', '#9c27b0'];
+      for (let i = 0; i < 20; i++) {
         this.effects.push({
           id: id + i, type: type,
           x: x + (Math.random() - 0.5) * 10, y: y - 5,
@@ -192,9 +192,9 @@ var officeRenderer = {
   },
 
   updateEffects: function (deltaMs) {
-    var now = performance.now();
+    const now = performance.now();
     this.effects = this.effects.filter(function (fx) {
-      var elapsed = now - fx.startTime;
+      const elapsed = now - fx.startTime;
       if (elapsed > fx.duration) return false;
       fx.alpha = 1 - (elapsed / fx.duration);
       fx.x += fx.vx * (deltaMs / 16);
@@ -211,8 +211,8 @@ var officeRenderer = {
   },
 
   renderEffects: function (ctx) {
-    for (var i = 0; i < this.effects.length; i++) {
-      var fx = this.effects[i];
+    for (let i = 0; i < this.effects.length; i++) {
+      const fx = this.effects[i];
       ctx.save();
       ctx.translate(fx.x, fx.y);
       ctx.rotate(fx.rotation);
@@ -225,8 +225,8 @@ var officeRenderer = {
         ctx.fillStyle = 'rgba(255,255,255,0.3)';
         ctx.fillRect(-2, -3, 2, 2);
       } else if (fx.type === 'warning') {
-        var size = 24;
-        var wobble = Math.sin(performance.now() * 0.02) * 3;
+        const size = 24;
+        const wobble = Math.sin(performance.now() * 0.02) * 3;
         ctx.translate(wobble, 0);
         ctx.fillStyle = 'rgba(0,0,0,0.3)';
         this._drawTri(ctx, 2, 2, size);
@@ -244,8 +244,8 @@ var officeRenderer = {
         ctx.fillStyle = fx.color || '#fff';
         ctx.font = 'bold 9px "Courier New", monospace';
         ctx.textAlign = 'center';
-        var chars = ['0', '1', '{', '}', ';', '>', '_'];
-        var charIdx = parseInt(fx.id.slice(-1), 36) % chars.length;
+        const chars = ['0', '1', '{', '}', ';', '>', '_'];
+        const charIdx = parseInt(fx.id.slice(-1), 36) % chars.length;
         ctx.fillText(chars[charIdx], 0, 0);
         ctx.shadowBlur = 4;
         ctx.shadowColor = fx.color || '#fff';
@@ -257,7 +257,7 @@ var officeRenderer = {
   },
 
   _drawTri: function (ctx, x, y, size) {
-    var h = size * (Math.sqrt(3) / 2);
+    const h = size * (Math.sqrt(3) / 2);
     ctx.beginPath();
     ctx.moveTo(x, y - h / 2 - 2);
     ctx.lineTo(x + size / 2 + 2, y + h / 2);
