@@ -319,8 +319,8 @@ function scheduleIdleDone(sessionId) {
     postToolIdleTimers.delete(sessionId);
     if (!agentManager) return;
     const agent = agentManager.getAgent(sessionId);
-    if (agent && (agent.state === 'Working' || agent.state === 'Thinking')) {
-      debugLog(`[Hook] Idle timeout → Done: ${sessionId.slice(0, 8)}`);
+    if (agent && agent.state === 'Working') {
+      debugLog(`[Hook] Idle timeout → Done (from Working): ${sessionId.slice(0, 8)}`);
       agentManager.updateAgent({ ...agent, sessionId, state: 'Done' }, 'hook');
     }
   }, POST_TOOL_IDLE_MS);
@@ -351,7 +351,7 @@ function processHookEvent(data) {
       if (agentManager) {
         const agent = agentManager.getAgent(sessionId);
         if (agent) {
-          agentManager.updateAgent({ ...agent, sessionId, state: 'Working' }, 'hook');
+          agentManager.updateAgent({ ...agent, sessionId, state: 'Thinking' }, 'hook');
         } else {
           // 복구에 실패했거나 30분 지나서 삭제된 경우, 다시 훅이 오면 새 세션으로 생성
           debugLog(`[Hook] auto-creating agent for existing session: ${sessionId.slice(0, 8)}`);
@@ -359,7 +359,7 @@ function processHookEvent(data) {
           // 생성 직후 상태 업데이트를 위해 다시 가져옴
           setTimeout(() => {
             const newAgent = agentManager.getAgent(sessionId);
-            if (newAgent) agentManager.updateAgent({ ...newAgent, state: 'Working' }, 'hook');
+            if (newAgent) agentManager.updateAgent({ ...newAgent, state: 'Thinking' }, 'hook');
           }, 100);
         }
       }
@@ -399,7 +399,7 @@ function processHookEvent(data) {
     case 'PostToolUse': {
       if (agentManager && firstPreToolUseDone.has(sessionId)) {
         const agent = agentManager.getAgent(sessionId);
-        if (agent) agentManager.updateAgent({ ...agent, sessionId, state: 'Working' }, 'hook');
+        if (agent) agentManager.updateAgent({ ...agent, sessionId, state: 'Thinking' }, 'hook');
       }
       scheduleIdleDone(sessionId);
       break;

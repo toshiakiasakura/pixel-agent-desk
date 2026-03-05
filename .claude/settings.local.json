@@ -20,7 +20,9 @@
       "Bash(npm install:*)",
       "Bash(npm test:*)",
       "Bash(npx jest:*)",
-      "Bash(npm audit:*)"
+      "Bash(npm audit:*)",
+      "Bash(find:*)",
+      "Bash(npx eslint:*)"
     ]
   }
 }

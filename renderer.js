@@ -24,7 +24,7 @@ const ANIM_SEQUENCES = {
 // --- 상태별 맵핑 ---
 const stateConfig = {
   'Working': { anim: 'working', class: 'state-working', label: '⚡ Working...' },
-  'Thinking': { anim: 'working', class: 'state-working', label: '⚡ Working...' },
+  'Thinking': { anim: 'working', class: 'state-working', label: '💭 Thinking...' },
   'Done': { anim: 'complete', class: 'state-complete', label: '✓ Done!' },
   'Waiting': { anim: 'waiting', class: 'state-waiting', label: '⏳ Waiting...' },
   'Error': { anim: 'alert', class: 'state-alert', label: '⚠️ Error!' },
