@@ -46,7 +46,7 @@ function registerIpcHandlers({ agentManager, sessionPids, windowManager, debugLo
       const { width, height, x, y } = mw.getBounds();
 
       const newWidth = Math.max(220, Math.ceil(size.width ? size.width + 30 : width));
-      const newHeight = Math.max(300, Math.ceil(size.height ? size.height + 40 : height));
+      const newHeight = Math.max(240, Math.ceil(size.height ? size.height + 40 : height));
 
       if (newWidth === width && newHeight === height) return;
 

@@ -171,9 +171,13 @@ class HeatmapScanner {
 
     // 증분 읽기
     const fd = fs.openSync(filePath, 'r');
-    const buf = Buffer.alloc(stat.size - startByte);
-    fs.readSync(fd, buf, 0, buf.length, startByte);
-    fs.closeSync(fd);
+    let buf;
+    try {
+      buf = Buffer.alloc(stat.size - startByte);
+      fs.readSync(fd, buf, 0, buf.length, startByte);
+    } finally {
+      fs.closeSync(fd);
+    }
 
     const chunk = buf.toString('utf-8');
     const lines = chunk.split('\n').filter(Boolean);

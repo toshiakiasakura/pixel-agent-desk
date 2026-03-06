@@ -26,7 +26,7 @@ body {
   pointer-events: none;
   /* 배경은 클릭 통과 */
   min-width: 220px;
-  min-height: 280px;
+  min-height: 220px;
   width: fit-content;
   height: auto;
   padding-bottom: 2px;

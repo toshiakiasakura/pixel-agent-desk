@@ -238,7 +238,8 @@ function handleRequest(req, res) {
     const resolved = path.resolve(baseDir, decoded.slice(1)); // pathname 앞 '/' 제거
 
     // 경로 트래버설 방지: resolve 후 baseDir 밖이면 차단
-    if (!resolved.startsWith(baseDir + path.sep) && resolved !== baseDir) {
+    const rel = path.relative(baseDir, resolved);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) {
       res.writeHead(403, { 'Content-Type': 'text/plain' });
       res.end('Forbidden');
       return;

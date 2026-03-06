@@ -40,13 +40,13 @@ function getWindowSizeForAgents(agentsOrCount) {
     count = agentsOrCount || 0;
   }
 
-  if (count <= 1) return { width: 220, height: 300 };
+  if (count <= 1) return { width: 220, height: 240 };
 
   const CARD_W = 90;
   const GAP = 10;
   const OUTER = 120 + 20; // 팀 디자인 여백 감안
   const ROW_H = 240;
-  const BASE_H = 300;
+  const BASE_H = 240;
   const maxCols = 10;
 
   if (agents.length > 0) {

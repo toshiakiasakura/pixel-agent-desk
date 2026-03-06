@@ -94,8 +94,6 @@ class SessionScanner {
             ? path.join(os.homedir(), filePath.slice(1))
             : filePath;
 
-        if (!fs.existsSync(resolvedPath)) return null;
-
         let content;
         try {
             content = fs.readFileSync(resolvedPath, 'utf-8');

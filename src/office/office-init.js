@@ -16,10 +16,23 @@ async function initOffice() {
   const canvas = document.getElementById('office-canvas');
   if (!canvas) return;
 
+  // 로딩 인디케이터 표시
+  const container = canvas.parentElement;
+  let loadingEl = container.querySelector('.office-loading');
+  if (!loadingEl) {
+    loadingEl = document.createElement('div');
+    loadingEl.className = 'office-loading';
+    loadingEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);color:#fff;font-size:14px;z-index:10;';
+    loadingEl.textContent = 'Loading Office...';
+    container.style.position = 'relative';
+    container.appendChild(loadingEl);
+  }
+
   try {
     await officeRenderer.init(canvas);
   } catch (e) {
     console.error('[Office] Init failed:', e);
+    if (loadingEl) loadingEl.textContent = 'Failed to load office view';
     return;
   }
 
@@ -33,6 +46,9 @@ async function initOffice() {
   } catch (e) {
     console.error('[Office] Failed to fetch agents:', e);
   }
+
+  // 로딩 인디케이터 제거
+  if (loadingEl) loadingEl.remove();
 
   officeInitialized = true;
 }

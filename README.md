@@ -1,83 +1,109 @@
-# Pixel Agent Desk v2.0 👾
+# Pixel Agent Desk
 
-Claude CLI의 Hook 이벤트를 실시간으로 수신하여 여러 에이전트의 상태를 픽셀 아트로 시각화하는 데스크톱 대시보드입니다.
+Claude Code CLI의 훅 이벤트를 실시간으로 수신하여 에이전트 상태를 픽셀 아바타로 시각화하는 Electron 데스크톱 앱입니다.
 
-## 🌟 주요 기능
+## Features
 
-- **PID 기반 정교한 생명주기 관리**: 3초마다 프로세스 신호를 체크하여 Claude 종료 시 즉시 아바타를 제거합니다.
-- **실시간 상태 시각화 (Total Hooks)**:
-  - ⚙️ **Working**: `UserPromptSubmit` 혹은 도구 사용 중 (일하는 포즈)
-  - ✅ **Done**: `Stop` 혹은 작업 종료 (춤추는 포즈)
-  - 💤 **Waiting**: 초기 대기 및 입력 대기 상태 (앉아있음)
-  - ❓ **Help**: 권한 요청 및 알림 감지 (도움 요청 포즈)
-  - ⚠️ **Error**: 도구 실행 실패 시 표시
-- **인터랙티브 대시버드**:
-  - **터미널 자동 포커스**: 아바타 클릭 시 해당 Claude 세션이 실행 중인 터미널 창을 최상단으로 가져옵니다.
-  - **자동 복구 (Resume)**: 앱을 껐다 켜도 현재 실행 중인 모든 Claude 세션을 자동으로 찾아 아바타를 복구합니다.
-  - **Dashboard**: 웹 대시보드로 팀 전체 현황을 모니터링할 수 있습니다 (REST API + WebSocket 지원).
-- **자동 훅 등록**: 앱 시작 시 Claude CLI의 `settings.json`에 Hook 스크립트를 자동 등록합니다.
+- **Pixel Avatar** — 에이전트 상태(Waiting / Thinking / Working / Done / Help / Error)를 스프라이트 애니메이션으로 표시
+- **Virtual Office** — 2D 픽셀 아트 가상 오피스에서 캐릭터가 걸어다니며 상태 변화를 시각화 (A* 패스파인딩)
+- **Activity Heatmap** — GitHub 잔디 스타일 일별 활동 히트맵
+- **Dashboard** — 웹 대시보드로 전체 현황 모니터링 (REST API + SSE)
+- **Terminal Focus** — 아바타 클릭 시 해당 Claude 세션의 터미널 창을 최상단으로 활성화
+- **Auto Recovery** — 앱 재시작 시 실행 중인 Claude 세션을 자동 복구
+- **Sub-agent & Team** — 서브에이전트·팀 모드 지원, 에이전트 수 제한 없음
 
-## 🚀 시작하기
+## Tech Stack
 
-### 1. 설치
+- **Runtime:** Electron 32+ / Node.js
+- **Language:** JavaScript (no TypeScript, no framework)
+- **Rendering:** Canvas sprite animation (requestAnimationFrame)
+- **Validation:** AJV (JSON Schema)
+- **Test:** Jest 30
+
+## Quick Start
+
 ```bash
-npm install
+npm install   # 의존성 설치 + Claude CLI 훅 자동 등록
+npm start     # Electron 앱 실행
 ```
 
-> **자동 설정**:
-> - `npm install` 시 훅 자동 등록
-> - `npm start` 시 훅 미등록 상태면 자동 등록 (이중 보장)
+> `npm install` 시 `~/.claude/settings.json`에 HTTP 훅이 자동 등록됩니다.
+> 앱 시작 시에도 미등록 상태면 재등록합니다 (이중 보장).
 
-### 2. 실행
-```bash
-npm start
-```
+## Scripts
 
-### 3. 대시보드 실행 (선택)
-```bash
-npm run dashboard
-```
-> 대시보드는 `http://localhost:3000`에서 접속 가능합니다.
+| Command | Description |
+|---------|-------------|
+| `npm start` | Electron 앱 실행 |
+| `npm run dev` | 개발 모드 (DevTools 포함) |
+| `npm run dashboard` | 대시보드 서버만 실행 (http://localhost:3000) |
+| `npm test` | 테스트 실행 |
+| `npm run test:coverage` | 커버리지 리포트 |
 
-### 3. 사용
-### 3. 사용
-Claude Code가 실행되면 앱이 이를 즉시 감지하여 화면에 픽셀 캐릭터를 띄웁니다.
-- **캐릭터 클릭**: 해당 터미널 창을 활성화합니다.
-- **X 버튼**: 화면에서 아바타를 수동으로 제거합니다 (프로세스는 유지됨).
-- **종료**: 터미널에서 `exit`하거나 창을 닫으면 아바타도 수 초 내에 사라집니다.
-
-## 📁 프로젝트 구조
+## Architecture
 
 ```
-pixel-agent-desk/
-├── main.js                    # Electron 메인 프로세스, HTTP 훅 서버, 동적 윈도우 리사이징
-├── hook.js                    # 범용 훅 스크립트 (Claude CLI → HTTP 서버)
-├── sessionend_hook.js         # 세션 종료 시 JSONL에 SessionEnd 기록
-├── agentManager.js            # 멀티 에이전트 데이터 관리 (EventEmitter)
-├── renderer.js                # 애니메이션 엔진, 에이전트 0개일 때 대기 아바타 표출
-├── preload.js                 # IPC 통신 브릿지
-├── utils.js                   # 유틸리티 함수
-├── dashboard-server.js  # Dashboard 웹 서버 (REST API + WebSocket)
-├── dashboard.html       # Dashboard 대시보드 페이지
-├── dashboardPreload.js   # Dashboard IPC 브릿지
-├── index.html                 # UI 뼈대 구조
-├── styles.css                 # 디자인 시스템
-└── package.json               # 의존성 관리
+Claude CLI ──HTTP hook──> POST(:47821) ──hookProcessor
+                                            │
+                              ┌─────────────┤
+                              v             v
+                        AgentManager   Dashboard Server
+                          (SSoT)       (:3000, SSE/REST)
+                            │               │
+                  ┌─────────┼─────────┐     ├── Office Tab (Canvas 2D)
+                  v         v         v     ├── Dashboard Tab
+            renderer/*  dashboard  scanner  └── Tokens Tab
+           (pixel avatar) (web UI) (JSONL)
 ```
 
-## 📋 기술적 특징
+## Project Structure
 
-### Hook 기반 이벤트 수신
-- Claude CLI의 모든 주요 이벤트를 Hook으로 수신:
-  - `SessionStart`, `SessionEnd`: 세션 생명주기 관리
-  - `PreToolUse`, `PostToolUse`: 작업 상태 감지
-  - `TaskCompleted`: 작업 완료 상태 전환
-  - `PermissionRequest`: 권한 요청 상태
-  - `SubagentStart`, `SubagentStop`: 서브에이전트 관리
+```
+src/
+├── main.js                    # 앱 오케스트레이터
+├── main/
+│   ├── hookServer.js          # HTTP 훅 서버 (:47821)
+│   ├── hookProcessor.js       # 이벤트 처리 로직
+│   ├── hookRegistration.js    # Claude CLI 훅 자동 등록
+│   ├── livenessChecker.js     # PID 기반 생존 체크
+│   ├── windowManager.js       # Electron 윈도우 관리
+│   ├── ipcHandlers.js         # IPC 핸들러
+│   └── sessionPersistence.js  # 상태 영속화
+├── renderer/                  # 픽셀 아바타 UI (7 modules)
+├── office/                    # 가상 오피스 뷰 (9 modules)
+├── agentManager.js            # 에이전트 상태 관리 (SSoT)
+├── sessionScanner.js          # JSONL 토큰/비용 분석
+├── heatmapScanner.js          # 일별 활동 히트맵 집계
+├── dashboard-server.js        # 대시보드 웹 서버
+└── pricing.js                 # 모델별 토큰 가격
+```
 
-### 정교한 PID 관리
-- `process.kill(pid, 0)` 신호를 통해 프로세스 생존을 3초마다 체크합니다.
-- 앱 시작 시 살아있는 Claude PID를 조회하여 기존 활성 세션을 100% 복구합니다.
+## State Model
 
-### 2.5초 자동 완료 전환
-- Claude CLI가 간혹 `TaskCompleted` 훅을 보내지 않는 경우를 대비하여, 마지막 활동 후 2.5초가 지나면 자동으로 `Done` 포즈로 전환합니다.
+```
+SessionStart       → Waiting
+UserPromptSubmit   → Thinking
+PreToolUse (2nd+)  → Working
+PostToolUse        → Thinking (2.5s idle → Done)
+Stop/TaskCompleted → Done
+Notification       → Help
+SessionEnd         → Remove
+```
+
+## Hook Registration
+
+훅은 `~/.claude/settings.json`에 HTTP 타입으로 등록됩니다:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{ "matcher": "*", "hooks": [{ "type": "http", "url": "http://localhost:47821/hook" }] }]
+  }
+}
+```
+
+자동 등록이 실패할 경우 위 형식으로 수동 등록할 수 있습니다.
+
+## License
+
+MIT

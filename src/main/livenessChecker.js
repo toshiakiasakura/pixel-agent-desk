@@ -79,8 +79,13 @@ function detectClaudePidsFallback(callback) {
 
 // PID 미등록 에이전트 재탐지 (중복 실행 방지)
 const _pidRetryRunning = new Set();
+const MAX_PID_RETRY_ENTRIES = 200;
 function retryPidDetection(sessionId, agentManager, debugLog) {
   if (_pidRetryRunning.has(sessionId) || sessionPids.has(sessionId)) return;
+  // 무한 증가 방지
+  if (_pidRetryRunning.size >= MAX_PID_RETRY_ENTRIES) {
+    _pidRetryRunning.clear();
+  }
   _pidRetryRunning.add(sessionId);
 
   const agent = agentManager ? agentManager.getAgent(sessionId) : null;
@@ -107,9 +112,12 @@ function retryPidDetection(sessionId, agentManager, debugLog) {
 function startLivenessChecker({ agentManager, debugLog }) {
   const INTERVAL = 2000;   // 2초
   const GRACE_MS = 10000;  // 등록 후 10초 유예
+  let isScanning = false;
 
   setInterval(async () => {
-    if (!agentManager) return;
+    if (!agentManager || isScanning) return;
+    isScanning = true;
+    try {
     for (const agent of agentManager.getAllAgents()) {
       if (agent.firstSeen && Date.now() - agent.firstSeen < GRACE_MS) continue;
 
@@ -154,6 +162,11 @@ function startLivenessChecker({ agentManager, debugLog }) {
         sessionPids.delete(agent.id);
         agentManager.removeAgent(agent.id);
       }
+    }
+    } catch (e) {
+      debugLog(`[Live] Scan error: ${e.message}`);
+    } finally {
+      isScanning = false;
     }
   }, INTERVAL);
 }

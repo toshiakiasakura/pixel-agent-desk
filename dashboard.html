@@ -986,8 +986,8 @@
         </div>
       </div>
       <div class="header-right">
-        <div class="connection-status">
-          <span class="status-indicator" id="statusIndicator"></span>
+        <div class="connection-status" role="status" aria-live="polite">
+          <span class="status-indicator" id="statusIndicator" aria-hidden="true"></span>
           <span id="connectionStatus">연결 중...</span>
         </div>
       </div>
@@ -1077,7 +1077,7 @@
         totalCost: 0
       },
       connected: false,
-      currentView: 'office'
+      currentView: localStorage.getItem('dashboard-tab') || 'office'
     };
 
     // DOM 요소
@@ -1170,7 +1170,16 @@
         render();
       } catch (error) {
         console.error('[Dashboard] 초기 데이터 로드 실패:', error);
-        renderEmpty();
+        elements.mainContent.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">⚠️</div>
+            <div class="empty-state-title">연결 실패</div>
+            <div class="empty-state-text">에이전트 데이터를 불러올 수 없습니다.</div>
+            <div class="empty-state-text" style="font-size: 0.875rem; margin-top: 8px;">
+              SSE 연결이 복구되면 자동으로 데이터가 갱신됩니다
+            </div>
+          </div>
+        `;
       }
     }
 
@@ -1509,7 +1518,7 @@
               <span>${agent.name || 'Agent'}</span>
               ${typeBadge}
             </div>
-            <div class="agent-status ${statusClass}">${statusText}</div>
+            <div class="agent-status ${statusClass}" role="status" aria-label="상태: ${statusText}">${statusText}</div>
           </div>
           <div class="agent-body">
             <div class="agent-row">
@@ -1992,6 +2001,7 @@
           navItems.forEach(i => i.classList.remove('active'));
           item.classList.add('active');
           state.currentView = item.dataset.view;
+          localStorage.setItem('dashboard-tab', state.currentView);
 
           // Office lifecycle management
           if (state.currentView === 'office') {
@@ -2022,11 +2032,20 @@
       // 네비게이션 초기화
       initNavigation();
 
+      // 저장된 탭 복원 — nav 아이템 active 클래스 동기화
+      const navItems = document.querySelectorAll('.nav-item');
+      navItems.forEach(i => {
+        if (i.dataset.view === state.currentView) i.classList.add('active');
+        else i.classList.remove('active');
+      });
+
       // SSE 연결
       connectSSE();
 
-      // Start in Office view
-      initOffice();
+      // 현재 뷰에 맞는 초기화
+      if (state.currentView === 'office') {
+        initOffice();
+      }
       render();
     }
 

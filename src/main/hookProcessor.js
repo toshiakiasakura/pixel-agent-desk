@@ -10,6 +10,7 @@ function createHookProcessor({ agentManager, sessionPids, debugLog, detectClaude
   // 내부 상태
   const pendingSessionStarts = [];
   const firstPreToolUseDone = new Map(); // sessionId → boolean
+  const MAX_TRACKED_SESSIONS = 500;
 
   function processHookEvent(data) {
     const event = data.hook_event_name;
@@ -97,6 +98,11 @@ function createHookProcessor({ agentManager, sessionPids, debugLog, detectClaude
       case 'PreToolUse': {
         if (!firstPreToolUseDone.has(sessionId)) {
           firstPreToolUseDone.set(sessionId, true);
+          // 무한 증가 방지: 최대 크기 초과 시 가장 오래된 항목 제거
+          if (firstPreToolUseDone.size > MAX_TRACKED_SESSIONS) {
+            const oldest = firstPreToolUseDone.keys().next().value;
+            firstPreToolUseDone.delete(oldest);
+          }
           debugLog(`[Hook] PreToolUse ignored (first = session init)`);
         } else if (agentManager) {
           const agent = agentManager.getAgent(sessionId);
@@ -302,8 +308,6 @@ function createHookProcessor({ agentManager, sessionPids, debugLog, detectClaude
 
   return {
     processHookEvent,
-    handleSessionStart,
-    handleSessionEnd,
     flushPendingStarts,
     cleanup,
     // expose for sessionPersistence
