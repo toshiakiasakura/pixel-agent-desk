@@ -5,6 +5,7 @@
 
 const path = require('path');
 const os = require('os');
+const fs = require('fs');
 
 const sessionPids = new Map(); // sessionId → actual claude process PID
 
@@ -105,9 +106,76 @@ function retryPidDetection(sessionId, agentManager, debugLog) {
   });
 }
 
+/**
+ * Count running Claude CLI processes (node.exe *claude*)
+ */
+function countClaudeProcesses(callback) {
+  const { execFile } = require('child_process');
+  if (process.platform === 'win32') {
+    const psCmd = `(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine -like '*claude*' }).Count`;
+    execFile('powershell.exe', ['-NoProfile', '-Command', psCmd], { timeout: 6000 }, (err, stdout) => {
+      if (err || !stdout) return callback(0);
+      callback(parseInt(stdout.trim(), 10) || 0);
+    });
+  } else {
+    execFile('pgrep', ['-fc', 'node.*claude'], { timeout: 3000 }, (err, stdout) => {
+      callback(parseInt((stdout || '').trim(), 10) || 0);
+    });
+  }
+}
+
+/**
+ * Get jsonl file mtime (0 if not found)
+ */
+function getJsonlMtime(jsonlPath) {
+  if (!jsonlPath) return 0;
+  try {
+    const resolved = jsonlPath.startsWith('~')
+      ? path.join(os.homedir(), jsonlPath.slice(1))
+      : jsonlPath;
+    return fs.statSync(resolved).mtimeMs;
+  } catch { return 0; }
+}
+
+// Zombie sweep: compare process count vs main agent count, remove oldest by mtime
+let _zombieSweepRunning = false;
+function zombieSweep(agentManager, debugLog) {
+  if (_zombieSweepRunning) return;
+  _zombieSweepRunning = true;
+
+  const mainAgents = agentManager.getAllAgents().filter(a => !a.isSubagent);
+  const mainCount = mainAgents.length;
+  if (mainCount <= 1) { _zombieSweepRunning = false; return; }
+
+  countClaudeProcesses((processCount) => {
+    _zombieSweepRunning = false;
+    if (processCount >= mainCount) return; // no excess avatars
+
+    const excess = mainCount - processCount;
+    debugLog(`[Live] Zombie sweep: ${processCount} processes, ${mainCount} agents → ${excess} excess`);
+
+    // Sort by jsonl mtime ascending (oldest first)
+    const sorted = mainAgents
+      .map(a => ({ agent: a, mtime: getJsonlMtime(a.jsonlPath) }))
+      .sort((a, b) => a.mtime - b.mtime);
+
+    for (let i = 0; i < excess; i++) {
+      const { agent } = sorted[i];
+      debugLog(`[Live] Zombie sweep: removing ${agent.id.slice(0, 8)} (mtime=${new Date(sorted[i].mtime).toISOString()})`);
+      sessionPids.delete(agent.id);
+      agentManager.removeAgent(agent.id);
+    }
+  });
+}
+
 function startLivenessChecker({ agentManager, debugLog }) {
   const INTERVAL = 2000;   // 2 seconds
   const GRACE_MS = 10000;  // 10-second grace period after registration
+
+  // Zombie sweep: every 30 seconds, compare process count vs agent count
+  setInterval(() => {
+    if (agentManager) zombieSweep(agentManager, debugLog);
+  }, 30000);
 
   setInterval(async () => {
     if (!agentManager) return;
@@ -119,6 +187,11 @@ function startLivenessChecker({ agentManager, debugLog }) {
         retryPidDetection(agent.id, agentManager, debugLog);
         const noPidAge = Date.now() - (agent.firstSeen || 0);
         if (noPidAge > GRACE_MS + 10000) {
+          // Solo agent protection: don't remove the only agent
+          if (agentManager.getAgentCount() <= 1) {
+            debugLog(`[Live] ${agent.id.slice(0, 8)} no PID but solo agent → keeping`);
+            continue;
+          }
           debugLog(`[Live] ${agent.id.slice(0, 8)} no PID for ${Math.round(noPidAge/1000)}s → removing`);
           agentManager.removeAgent(agent.id);
         }
