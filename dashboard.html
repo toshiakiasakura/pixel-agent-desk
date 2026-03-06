@@ -403,6 +403,27 @@
       transform: translateY(-2px);
     }
 
+    .agent-dismiss-btn {
+      background: none;
+      border: none;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 2px 5px;
+      border-radius: 3px;
+      opacity: 0;
+      transition: all 0.15s ease;
+    }
+
+    .agent-card:hover .agent-dismiss-btn {
+      opacity: 1;
+    }
+
+    .agent-dismiss-btn:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
     /* ── A3: Per-status glow effects ── */
     .agent-card.working {
       box-shadow: var(--glow-working);
@@ -1535,7 +1556,10 @@
               <span>${agent.name || 'Agent'}</span>
               ${typeBadge}
             </div>
-            <div class="agent-status ${statusClass}" role="status" aria-label="Status: ${statusText}">${statusText}</div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div class="agent-status ${statusClass}" role="status" aria-label="Status: ${statusText}">${statusText}</div>
+              <button class="agent-dismiss-btn" onclick="dismissAgent('${agent.id}')" title="Hide agent">✕</button>
+            </div>
           </div>
           <div class="agent-body">
             <div class="agent-row">
@@ -2043,9 +2067,15 @@
       }
     }
 
+    // Dismiss agent via REST API
+    function dismissAgent(agentId) {
+      fetch(`/api/agents/${agentId}/dismiss`, { method: 'POST' }).catch(() => {});
+    }
+
     // Global access
     window.openSettings = openSettings;
     window.closeSettings = closeSettings;
+    window.dismissAgent = dismissAgent;
 
     /**
      * Initialize navigation
