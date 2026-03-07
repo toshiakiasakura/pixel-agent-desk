@@ -44,9 +44,11 @@ function registerIpcHandlers({ agentManager, sessionPids, windowManager, debugLo
     const newWidth = Math.max(150, Math.ceil(size.width ? size.width + 20 : width));
     const newHeight = Math.max(180, Math.ceil(size.height ? size.height + 30 : height));
     if (newWidth === width && newHeight === height) return;
+    const wa = screen.getDisplayMatching(mw.getBounds()).bounds;
     const dh = newHeight - height;
-    const newY = Math.max(0, y - dh);
-    mw.setBounds({ x, y: newY, width: newWidth, height: newHeight });
+    const newY = Math.max(wa.y, Math.min(y - dh, wa.y + wa.height - newHeight));
+    const newX = Math.max(wa.x, Math.min(x, wa.x + wa.width - newWidth));
+    mw.setBounds({ x: newX, y: newY, width: newWidth, height: newHeight });
     debugLog(`[Main] Resize → ${newWidth}x${newHeight}`);
   });
 
@@ -77,8 +79,8 @@ function registerIpcHandlers({ agentManager, sessionPids, windowManager, debugLo
   ipcMain.on('constrain-window', (event, bounds) => {
     const mw = windowManager.mainWindow;
     if (!mw) return;
-    const wa = screen.getPrimaryDisplay().workArea;
     const { width, height } = mw.getBounds();
+    const wa = screen.getDisplayMatching(mw.getBounds()).bounds;
     mw.setPosition(
       Math.max(wa.x, Math.min(bounds.x, wa.x + wa.width - width)),
       Math.max(wa.y, Math.min(bounds.y, wa.y + wa.height - height))

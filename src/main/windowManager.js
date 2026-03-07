@@ -18,9 +18,11 @@ function createWindowManager({ agentManager, sessionScanner, heatmapScanner, deb
     const { width, height } = getWindowSizeForAgents(agentsOrCount);
     const bounds = mainWindow.getBounds();
     if (width === bounds.width && height === bounds.height) return;
+    const wa = screen.getDisplayMatching(bounds).bounds;
     const dh = height - bounds.height;
-    const newY = Math.max(0, bounds.y - dh);
-    mainWindow.setBounds({ x: bounds.x, y: newY, width, height });
+    const newY = Math.max(wa.y, Math.min(bounds.y - dh, wa.y + wa.height - height));
+    const newX = Math.max(wa.x, Math.min(bounds.x, wa.x + wa.width - width));
+    mainWindow.setBounds({ x: newX, y: newY, width, height });
     const info = Array.isArray(agentsOrCount) ? agentsOrCount.length : agentsOrCount;
     debugLog(`[Main] Window → ${width}x${height} (${info} agents)`);
   }
@@ -54,6 +56,18 @@ function createWindowManager({ agentManager, sessionScanner, heatmapScanner, deb
     mainWindow.loadFile(path.join(__dirname, '..', '..', 'index.html'));
 
     errorHandler.setMainWindow(mainWindow);
+
+    // Constrain window to workArea after drag
+    mainWindow.on('moved', () => {
+      if (mainWindow.isDestroyed()) return;
+      const b = mainWindow.getBounds();
+      const wa = screen.getDisplayMatching(b).bounds;
+      const cx = Math.max(wa.x, Math.min(b.x, wa.x + wa.width - b.width));
+      const cy = Math.max(wa.y, Math.min(b.y, wa.y + wa.height - b.height));
+      if (cx !== b.x || cy !== b.y) {
+        mainWindow.setPosition(cx, cy);
+      }
+    });
 
     mainWindow.once('ready-to-show', () => {
       mainWindow.show();
