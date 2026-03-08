@@ -9,29 +9,35 @@
 </head>
 
 <body>
-  <canvas id="office-canvas"></canvas>
+  <!-- Draggable header area (fills space left of native window controls) -->
+  <div class="pip-header" id="pipHeader">
+    <span class="pip-header-label">Office</span>
+    <button class="pip-back-btn" id="pipBackBtn" title="Back to dashboard">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="1" y="1" width="12" height="12" rx="2"/>
+        <polyline points="6,1 1,1 1,6"/>
+      </svg>
+    </button>
+  </div>
 
-  <!-- Back-to-dashboard button (hover) -->
-  <button class="pip-back-btn" id="pipBackBtn" title="Back to dashboard">
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="1" y="1" width="12" height="12" rx="2"/>
-      <polyline points="6,1 1,1 1,6"/>
-    </svg>
-  </button>
+  <!-- Office canvas -->
+  <div class="pip-canvas-area">
+    <canvas id="office-canvas"></canvas>
+  </div>
 
-  <!-- Office Engine Scripts (same as dashboard.html) -->
-  <script src="/src/office/office-config.js?v=3"></script>
-  <script src="/src/office/office-layers.js?v=3"></script>
-  <script src="/src/office/office-coords.js?v=3"></script>
-  <script src="/src/office/office-pathfinder.js?v=3"></script>
-  <script src="/src/office/office-sprite.js?v=3"></script>
-  <script src="/src/office/office-character.js?v=3"></script>
-  <script src="/src/office/office-renderer.js?v=3"></script>
-  <script src="/src/office/office-ui.js?v=3"></script>
-  <script src="/src/office/office-init.js?v=3"></script>
+  <!-- Office Engine Scripts (same 9 modules as dashboard.html) -->
+  <script src="/src/office/office-config.js?v=4"></script>
+  <script src="/src/office/office-layers.js?v=4"></script>
+  <script src="/src/office/office-coords.js?v=4"></script>
+  <script src="/src/office/office-pathfinder.js?v=4"></script>
+  <script src="/src/office/office-sprite.js?v=4"></script>
+  <script src="/src/office/office-character.js?v=4"></script>
+  <script src="/src/office/office-renderer.js?v=4"></script>
+  <script src="/src/office/office-ui.js?v=4"></script>
+  <script src="/src/office/office-init.js?v=4"></script>
 
-  <!-- PiP Logic -->
-  <script src="/public/pip.js"></script>
+  <!-- PiP Logic (must be last) -->
+  <script src="/public/pip.js?v=4"></script>
 </body>
 
 </html>

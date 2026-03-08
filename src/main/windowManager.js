@@ -186,7 +186,7 @@ function createWindowManager({ agentManager, sessionScanner, heatmapScanner, deb
     }
 
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-    // Office map is 864x800 → aspect ~1.08
+    // Office map is 864x800
     const pipW = 432;
     const pipH = 400;
     const margin = 20;
@@ -196,6 +196,7 @@ function createWindowManager({ agentManager, sessionScanner, heatmapScanner, deb
       height: pipH,
       x: width - pipW - margin,
       y: height - pipH - margin,
+      show: false,
       titleBarStyle: 'hidden',
       titleBarOverlay: {
         color: '#0d1117',
@@ -223,6 +224,21 @@ function createWindowManager({ agentManager, sessionScanner, heatmapScanner, deb
     pipWindow.setAlwaysOnTop(true, 'floating');
 
     pipWindow.loadURL('http://localhost:3000/pip');
+
+    // Show only when content is fully loaded (prevents RAF throttle on hidden window)
+    pipWindow.once('ready-to-show', () => {
+      if (pipWindow && !pipWindow.isDestroyed()) {
+        pipWindow.show();
+        debugLog('[PiP] Window shown (ready-to-show)');
+      }
+    });
+
+    // Handle load failure
+    pipWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+      debugLog(`[PiP] Failed to load: ${errorCode} - ${errorDescription}`);
+      if (pipWindow && !pipWindow.isDestroyed()) pipWindow.destroy();
+      pipWindow = null;
+    });
 
     // Notify dashboard: PiP opened → show placeholder
     if (dashboardWindow && !dashboardWindow.isDestroyed()) {

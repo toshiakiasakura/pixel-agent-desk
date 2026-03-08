@@ -419,6 +419,7 @@ body {
   align-items: center;
   justify-content: center;
   position: relative;
+  position: relative;
   /* show whole canvas without internal scrolls */
   overflow: visible;
 }
