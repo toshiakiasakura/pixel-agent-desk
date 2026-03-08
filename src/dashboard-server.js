@@ -230,6 +230,21 @@ function handleRequest(req, res) {
     return;
   }
 
+  // PiP window
+  if (pathname === '/pip') {
+    const pipFile = path.join(__dirname, '..', 'pip.html');
+    fs.readFile(pipFile, (err, data) => {
+      if (err) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Internal Server Error');
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(data);
+    });
+    return;
+  }
+
   // Static file serving: /public/* and /src/office/*
   if (pathname.startsWith('/public/') || pathname.startsWith('/src/office/')) {
     const baseDir = path.resolve(__dirname, '..');

@@ -9,6 +9,7 @@ const path = require('path');
 function createWindowManager({ agentManager, sessionScanner, heatmapScanner, debugLog, adaptAgentToDashboard, errorHandler, getWindowSizeForAgents }) {
   let mainWindow = null;
   let dashboardWindow = null;
+  let pipWindow = null;
   let keepAliveInterval = null;
   let dashboardServer = null;
 
@@ -178,7 +179,68 @@ function createWindowManager({ agentManager, sessionScanner, heatmapScanner, deb
     }
   }
 
+  function createPipWindow() {
+    if (pipWindow && !pipWindow.isDestroyed()) {
+      pipWindow.focus();
+      return;
+    }
+
+    const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+    // Office map is 864x800 → aspect ~1.08
+    const pipW = 432;
+    const pipH = 400;
+    const margin = 20;
+
+    pipWindow = new BrowserWindow({
+      width: pipW,
+      height: pipH,
+      x: width - pipW - margin,
+      y: height - pipH - margin,
+      frame: false,
+      alwaysOnTop: true,
+      resizable: true,
+      minimizable: false,
+      maximizable: false,
+      minWidth: 200,
+      minHeight: 200,
+      skipTaskbar: false,
+      title: 'Office PiP',
+      backgroundColor: '#050709',
+      hasShadow: true,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: false,
+        preload: path.join(__dirname, '..', 'pipPreload.js')
+      }
+    });
+
+    pipWindow.setAspectRatio(864 / 800);
+    pipWindow.setAlwaysOnTop(true, 'floating');
+
+    pipWindow.loadURL('http://localhost:3000/pip');
+
+    pipWindow.on('closed', () => {
+      pipWindow = null;
+      // Sync toggle button state in dashboard
+      if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+        dashboardWindow.webContents.send('pip-state-changed', false);
+      }
+    });
+
+    debugLog('[PiP] Window created');
+  }
+
+  function closePipWindow() {
+    if (pipWindow && !pipWindow.isDestroyed()) {
+      pipWindow.close();
+      debugLog('[PiP] Window closed by request');
+    }
+    pipWindow = null;
+  }
+
   function closeDashboardWindow() {
+    closePipWindow();
     if (dashboardWindow && !dashboardWindow.isDestroyed()) {
       dashboardWindow.close();
       debugLog('[MissionControl] Window closed by request');
@@ -232,11 +294,14 @@ function createWindowManager({ agentManager, sessionScanner, heatmapScanner, deb
   return {
     get mainWindow() { return mainWindow; },
     get dashboardWindow() { return dashboardWindow; },
+    get pipWindow() { return pipWindow; },
     createWindow,
     startKeepAlive,
     stopKeepAlive,
     createDashboardWindow,
     closeDashboardWindow,
+    createPipWindow,
+    closePipWindow,
     startDashboardServer,
     stopDashboardServer,
     resizeWindowForAgents,

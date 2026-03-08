@@ -26,8 +26,8 @@ var officeCharacters = {
 
     const char = {
       id: agentData.id,
-      x: 100 + Math.random() * 100,
-      y: 200 + Math.random() * 100,
+      x: (officeLayers.width  || 800) / 2 + (Math.random() - 0.5) * 80,
+      y: (officeLayers.height || 800) / 2 + (Math.random() - 0.5) * 80,
       path: [],
       pathIndex: 0,
       facingDir: 'down',

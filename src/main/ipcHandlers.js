@@ -150,6 +150,27 @@ function registerIpcHandlers({ agentManager, sessionPids, windowManager, debugLo
       event.reply('dashboard-agents-response', []);
     }
   });
+
+  // PiP IPC Handlers
+  ipcMain.handle('toggle-pip', async () => {
+    try {
+      const pw = windowManager.pipWindow;
+      if (pw && !pw.isDestroyed()) {
+        windowManager.closePipWindow();
+        return { success: true, action: 'closed' };
+      } else {
+        windowManager.createPipWindow();
+        return { success: true, action: 'opened' };
+      }
+    } catch (error) {
+      debugLog(`[PiP] Error toggling: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.on('pip-close', () => {
+    windowManager.closePipWindow();
+  });
 }
 
 module.exports = { registerIpcHandlers };

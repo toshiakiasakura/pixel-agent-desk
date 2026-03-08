@@ -603,6 +603,28 @@ document.querySelectorAll('.nav-item').forEach(b => {
   };
 });
 
+// ─── PiP TOGGLE ───
+function setupPipToggle() {
+  const btn = document.getElementById('pipToggleBtn');
+  if (!btn) return;
+
+  btn.addEventListener('click', async () => {
+    if (typeof dashboardAPI !== 'undefined' && dashboardAPI.togglePip) {
+      const result = await dashboardAPI.togglePip();
+      if (result && result.success) {
+        btn.classList.toggle('active', result.action === 'opened');
+      }
+    }
+  });
+
+  // Sync state when PiP is closed externally (X button or window close)
+  if (typeof dashboardAPI !== 'undefined' && dashboardAPI.onPipStateChanged) {
+    dashboardAPI.onPipStateChanged((isOpen) => {
+      btn.classList.toggle('active', isOpen);
+    });
+  }
+}
+
 // ─── BOOT ───
 function initApp() {
   // Sync startup view
@@ -625,6 +647,8 @@ function initApp() {
     initOffice();
     setupOfficeClickHandler();
   }, 100);
+
+  setupPipToggle();
 }
 
 document.addEventListener('DOMContentLoaded', initApp);

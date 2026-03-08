@@ -1,0 +1,78 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  overflow: hidden;
+  background: #050709;
+  width: 100vw;
+  height: 100vh;
+  -webkit-app-region: drag;
+}
+
+#office-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* ─── Hover Overlay ─── */
+.pip-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  -webkit-app-region: no-drag;
+}
+
+body:hover .pip-overlay {
+  opacity: 1;
+}
+
+.pip-titlebar {
+  height: 32px;
+  background: linear-gradient(rgba(0, 0, 0, 0.7), transparent);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 0 12px;
+  pointer-events: auto;
+}
+
+.pip-title-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.pip-close-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.pip-close-btn:hover {
+  background: rgba(248, 81, 73, 0.8);
+  color: #fff;
+}
