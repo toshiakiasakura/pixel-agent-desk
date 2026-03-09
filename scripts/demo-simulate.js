@@ -54,7 +54,7 @@ const agents = [
 const subagents = [
   { parentId: 'demo-agent-01', id: 'demo-sub-01a', cwd: '/projects/pixel-agent-desk', agent_type: 'research',  spawnAfterMs: 8000,  durationMs: 18000 },
   { parentId: 'demo-agent-01', id: 'demo-sub-01b', cwd: '/projects/pixel-agent-desk', agent_type: 'edit',      spawnAfterMs: 15000, durationMs: 12000 },
-  { parentId: 'demo-agent-02', id: 'demo-sub-02a', cwd: '/projects/web-app',          agent_type: 'research',  spawnAfterMs: 6000,  durationMs: 20000 },
+  { parentId: 'demo-agent-02', id: 'demo-sub-02a', cwd: '/projects/web-app',          agent_type: 'research',  spawnAfterMs: 6000,  durationMs: 17000 },
   { parentId: 'demo-agent-07', id: 'demo-sub-07a', cwd: '/projects/backend-api',      agent_type: 'test',      spawnAfterMs: 10000, durationMs: 15000 },
 ];
 
@@ -77,13 +77,15 @@ async function simulateAgent(agent, delayOffset) {
   const cycles = scenarioCycles[agent.scenario] + Math.floor(Math.random() * 2);
 
   // 1. SessionStart
+  // Use the demo process's own PID so the liveness checker sees a live process
+  // throughout the entire demo run (fake PIDs would be detected as dead within 10s)
   console.log(`[${agent.id}] SessionStart`);
   await sendHook({
     hook_event_name: 'SessionStart',
     session_id: agent.id,
     cwd: agent.cwd,
     model: agent.model,
-    _pid: 99900 + Math.floor(Math.random() * 100),
+    _pid: process.pid,
     _timestamp: ts(),
   });
   await sleep(1200 + Math.random() * 800);
