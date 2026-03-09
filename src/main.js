@@ -25,7 +25,8 @@ const { registerIpcHandlers } = require('./main/ipcHandlers');
 // =====================================================
 // Save error logs to file
 // =====================================================
-const errorLogPath = path.join(__dirname, 'startup-error.log');
+const logDir = app.isPackaged ? app.getPath('userData') : __dirname;
+const errorLogPath = path.join(logDir, 'startup-error.log');
 const originalConsoleError = console.error;
 console.error = (...args) => {
   const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
@@ -60,7 +61,7 @@ process.on('unhandledRejection', (reason, promise) => {
 const debugLog = (msg) => {
   const timestamp = new Date().toISOString();
   const logMsg = `[${timestamp}] ${msg}\n`;
-  fs.appendFileSync(path.join(__dirname, 'debug.log'), logMsg);
+  fs.appendFileSync(path.join(logDir, 'debug.log'), logMsg);
   console.log(msg);
 };
 

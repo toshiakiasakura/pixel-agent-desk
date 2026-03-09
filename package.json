@@ -53,8 +53,7 @@
           "target": "portable",
           "arch": ["x64"]
         }
-      ],
-      "icon": "public/icon.ico"
+      ]
     },
     "mac": {
       "target": [
@@ -63,7 +62,6 @@
           "arch": ["x64", "arm64"]
         }
       ],
-      "icon": "public/icon.icns",
       "category": "public.app-category.developer-tools"
     },
     "linux": {
@@ -77,14 +75,11 @@
           "arch": ["x64"]
         }
       ],
-      "icon": "public/icon.png",
       "category": "Development"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "installerIcon": "public/icon.ico",
-      "uninstallerIcon": "public/icon.ico"
+      "allowToChangeInstallationDirectory": true
     }
   },
   "devDependencies": {
