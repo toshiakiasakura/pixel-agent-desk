@@ -14,6 +14,8 @@ const { adaptAgentToDashboard } = require('./dashboardAdapter');
 const errorHandler = require('./errorHandler');
 const { getWindowSizeForAgents } = require('./utils');
 
+const settingsStore = require('./main/settingsStore');
+
 const { HOOK_SERVER_PORT, registerClaudeHooks } = require('./main/hookRegistration');
 const { startHookServer } = require('./main/hookServer');
 const { createHookProcessor } = require('./main/hookProcessor');
@@ -88,6 +90,10 @@ let agentListeners = null;
 app.whenReady().then(() => {
   debugLog('========== Pixel Agent Desk started ==========');
 
+  // Initialize settings store before anything else
+  settingsStore.init(app.getPath('userData'));
+  debugLog(`[Settings] Loaded from ${settingsStore.getPath()}`);
+
   // Minimal application menu (removes default File/Edit/Window/Help clutter)
   const isDev = process.argv.includes('--dev');
   const menuTemplate = [
@@ -138,6 +144,13 @@ app.whenReady().then(() => {
   });
 
   // 4. Create window manager
+  const onSettingsChanged = () => {
+    if (windowManager && agentManager) {
+      windowManager.resizeWindowForAgents(agentManager.getAllAgents());
+      debugLog('[Settings] Window resized after settings change');
+    }
+  };
+
   windowManager = createWindowManager({
     agentManager,
     sessionScanner,
@@ -145,7 +158,9 @@ app.whenReady().then(() => {
     debugLog,
     adaptAgentToDashboard,
     errorHandler,
-    getWindowSizeForAgents,
+    getWindowSizeForAgents: (agentsOrCount) => getWindowSizeForAgents(agentsOrCount, settingsStore.get()),
+    settingsStore,
+    onSettingsChanged,
   });
 
   // 5. Register IPC handlers

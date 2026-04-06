@@ -50,6 +50,15 @@
           </svg>
           Token Usage
         </button>
+
+        <div class="nav-label" style="margin-top: 20px">Configure</div>
+        <button class="nav-item" data-view="settings">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          Window Settings
+        </button>
       </nav>
       <div class="sidebar-footer">
         <div class="status-dot disconnected" id="statusIndicator"></div>
@@ -105,6 +114,12 @@
               <div class="panel-header">
                 Operational Floorplan
                 <span class="panel-header-badge">LIVE</span>
+                <div class="zoom-controls">
+                  <button class="zoom-btn" id="officeZoomOut" title="Zoom out">−</button>
+                  <span class="zoom-level" id="officeZoomLevel">100%</span>
+                  <button class="zoom-btn" id="officeZoomIn" title="Zoom in">+</button>
+                  <button class="zoom-btn zoom-reset" id="officeZoomReset" title="Reset zoom">↺</button>
+                </div>
                 <button class="pip-toggle-btn" id="pipToggleBtn" title="Picture-in-Picture">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="11" rx="1.5"/><rect x="8" y="7" width="6" height="5" rx="1" fill="currentColor" stroke="none"/></svg>
                 </button>
@@ -211,6 +226,25 @@
           </div>
         </div>
 
+        <!-- =================== SETTINGS VIEW =================== -->
+        <div id="settingsView" class="view-section">
+          <div class="panel settings-panel">
+            <div class="panel-header">
+              Window Sizing Settings
+              <span class="settings-change-hint">Changes apply immediately</span>
+            </div>
+            <div class="panel-body">
+              <div class="settings-form" id="settingsForm"></div>
+              <div class="settings-preview panel" id="settingsPreview"></div>
+              <div class="settings-actions">
+                <button class="settings-btn-save" id="settingsSaveBtn">Save Settings</button>
+                <button class="settings-btn-reset" id="settingsResetBtn">Reset to Defaults</button>
+              </div>
+              <div class="settings-status" id="settingsStatus"></div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </main>
   </div>
@@ -228,12 +262,12 @@
   <script src="/src/office/office-pathfinder.js?v=6"></script>
   <script src="/src/office/office-sprite.js?v=6"></script>
   <script src="/src/office/office-character.js?v=6"></script>
-  <script src="/src/office/office-renderer.js?v=6"></script>
+  <script src="/src/office/office-renderer.js?v=8"></script>
   <script src="/src/office/office-ui.js?v=6"></script>
   <script src="/src/office/office-init.js?v=6"></script>
 
   <!-- Application Logic -->
-  <script src="/public/dashboard.js"></script>
+  <script src="/public/dashboard.js?v=4"></script>
 </body>
 
 </html>

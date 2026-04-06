@@ -936,3 +936,206 @@ body {
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
+
+/* ─── Floorplan Zoom Controls ─── */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.zoom-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
+}
+
+.zoom-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--color-text);
+}
+
+.zoom-reset {
+  font-size: 0.75rem;
+}
+
+.zoom-level {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  min-width: 36px;
+  text-align: center;
+}
+
+/* ─── Settings View ─── */
+.settings-panel {
+  max-width: 860px;
+}
+
+.settings-change-hint {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  font-weight: 400;
+  margin-left: 8px;
+}
+
+.settings-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.settings-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-input {
+  width: 100px;
+  padding: 6px 10px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  transition: border-color 0.15s;
+}
+
+.settings-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.settings-input-unit {
+  font-size: 0.7rem;
+  color: var(--color-text-dark);
+}
+
+.settings-desc {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.settings-preview {
+  margin-bottom: 20px;
+}
+
+.preview-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.8rem;
+}
+
+.preview-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.preview-n {
+  color: var(--color-text-muted);
+  width: 140px;
+}
+
+.preview-dim {
+  font-family: var(--font-mono);
+  color: var(--color-primary);
+}
+
+.settings-preview-note {
+  font-size: 0.7rem;
+  color: var(--color-text-dark);
+  margin-top: 8px;
+  padding: 0 8px;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.settings-btn-save,
+.settings-btn-reset {
+  padding: 8px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.settings-btn-save {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.settings-btn-save:hover:not(:disabled) {
+  background: #388bfd;
+}
+
+.settings-btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-btn-reset {
+  background: transparent;
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+}
+
+.settings-btn-reset:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text);
+}
+
+.settings-btn-reset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-status {
+  font-size: 0.78rem;
+  min-height: 1.2em;
+  transition: opacity 0.3s;
+}
+
+.settings-status.success {
+  color: var(--color-success);
+}
+
+.settings-status.error {
+  color: var(--color-error);
+}

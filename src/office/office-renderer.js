@@ -13,6 +13,12 @@ var officeRenderer = {
   effects: [],
   laptopImages: { down: null, up: null, left: null, right: null },
   laptopOpenImages: { down: null, up: null, left: null, right: null },
+  zoom: 1.0,
+  panX: 0,
+  panY: 0,
+  ZOOM_MIN: 0.25,
+  ZOOM_MAX: 4.0,
+  ZOOM_STEP: 0.05,
 
   async init(canvas) {
     this.canvas = canvas;
@@ -87,11 +93,30 @@ var officeRenderer = {
     this.updateEffects(deltaMs);
   },
 
+  setZoom: function (level) {
+    this.zoom = Math.max(this.ZOOM_MIN, Math.min(this.ZOOM_MAX, level));
+    const el = document.getElementById('officeZoomLevel');
+    if (el) el.textContent = Math.round(this.zoom * 100) + '%';
+  },
+
+  zoomIn: function () { this.setZoom(this.zoom + this.ZOOM_STEP); },
+  zoomOut: function () { this.setZoom(this.zoom - this.ZOOM_STEP); },
+  resetZoom: function () { this.panX = 0; this.panY = 0; this.setZoom(1.0); },
+  pan: function (dx, dy) { this.panX += dx; this.panY += dy; },
+
   render: function () {
     if (!this.ctx || !officeLayers.bgImage) return;
     const ctx = this.ctx;
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // Apply zoom + pan transform centred on the canvas
+    ctx.save();
+    const cx = this.canvas.width / 2;
+    const cy = this.canvas.height / 2;
+    ctx.translate(cx + this.panX, cy + this.panY);
+    ctx.scale(this.zoom, this.zoom);
+    ctx.translate(-cx, -cy);
 
     // 1. Background
     ctx.drawImage(officeLayers.bgImage, 0, 0);
@@ -144,6 +169,8 @@ var officeRenderer = {
 
     // 5. Effects
     this.renderEffects(ctx);
+
+    ctx.restore();
   },
 
   spawnEffect: function (type, x, y) {

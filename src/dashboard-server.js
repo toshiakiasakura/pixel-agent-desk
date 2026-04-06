@@ -29,6 +29,8 @@ let agentManager = null;
 let sessionScanner = null;
 let heatmapScanner = null;
 let missionControlWindow = null;
+let settingsStore = null;
+let onSettingsChanged = null;
 const wsClients = new Set();
 const sseClients = new Set();
 
@@ -75,6 +77,20 @@ function setHeatmapScanner(scanner) {
  */
 function setDashboardWindow(window) {
   missionControlWindow = window;
+}
+
+/**
+ * Set the settings store reference
+ */
+function setSettingsStore(store) {
+  settingsStore = store;
+}
+
+/**
+ * Set the callback to trigger after settings change
+ */
+function setOnSettingsChanged(cb) {
+  onSettingsChanged = cb;
 }
 
 /**
@@ -368,6 +384,51 @@ function handleGetHealth(req, res) {
   }));
 }
 
+function handleGetSettings(req, res) {
+  if (!settingsStore) {
+    res.writeHead(503, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Settings store not available' }));
+    return;
+  }
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(settingsStore.get()));
+}
+
+function handlePostSettings(req, res) {
+  if (!settingsStore) {
+    res.writeHead(503, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Settings store not available' }));
+    return;
+  }
+  let body = '';
+  req.on('data', chunk => { body += chunk; });
+  req.on('end', () => {
+    try {
+      const partial = JSON.parse(body);
+      settingsStore.set(partial);
+      if (onSettingsChanged) onSettingsChanged();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, settings: settingsStore.get() }));
+    } catch (err) {
+      const status = err.name === 'SettingsValidationError' ? 400 : 500;
+      res.writeHead(status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+}
+
+function handlePostSettingsReset(req, res) {
+  if (!settingsStore) {
+    res.writeHead(503, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Settings store not available' }));
+    return;
+  }
+  settingsStore.reset();
+  if (onSettingsChanged) onSettingsChanged();
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ ok: true, settings: settingsStore.get() }));
+}
+
 /** Route table: "METHOD /path" → handler */
 const apiRoutes = {
   'GET /api/events': handleSSE,
@@ -376,6 +437,9 @@ const apiRoutes = {
   'GET /api/sessions': handleGetSessions,
   'GET /api/heatmap': handleGetHeatmap,
   'GET /api/health': handleGetHealth,
+  'GET /api/settings': handleGetSettings,
+  'POST /api/settings': handlePostSettings,
+  'POST /api/settings/reset': handlePostSettingsReset,
 };
 
 /**
@@ -531,6 +595,8 @@ module.exports = {
   setSessionScanner,
   setHeatmapScanner,
   setDashboardWindow,
+  setSettingsStore,
+  setOnSettingsChanged,
   broadcastUpdate,
   broadcastSSE,
   calculateStats,

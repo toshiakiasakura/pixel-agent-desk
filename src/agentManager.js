@@ -26,6 +26,7 @@ class AgentManager extends EventEmitter {
     this.agents = new Map();
     this._pendingEmit = new Map(); // agentId → { timer, state } — UI emit debounce
     this._usedAvatarIndices = new Set(); // Currently used avatar indices
+    this._nameGroups = new Map(); // baseName → [{ agentId, nameIndex }] — for duplicate disambiguation
     this.config = {
       softLimitWarning: 50,  // Soft warning (does not block, only logs)
       stateDebounceMs: 500,  // Working→Thinking transition debounce (ms)
@@ -43,6 +44,7 @@ class AgentManager extends EventEmitter {
     }
     this._pendingEmit.clear();
     this._usedAvatarIndices.clear();
+    this._nameGroups.clear();
     this.agents.clear();
     console.log('[AgentManager] Stopped');
   }
@@ -82,12 +84,20 @@ class AgentManager extends EventEmitter {
 
     const m = (key, defaultVal = null) => mergeField(entry, existingAgent, key, defaultVal);
 
+    // Assign nameIndex for duplicate directory disambiguation
+    let nameIndex = existingAgent ? existingAgent.nameIndex : null;
+    const baseName = this.formatDisplayName(entry.slug, entry.projectPath);
+    if (!existingAgent) {
+      nameIndex = this._assignNameIndex(agentId, baseName);
+    }
+
     const agentData = {
       id: agentId,
       sessionId: entry.sessionId,
       agentId: entry.agentId,
       slug: entry.slug,
-      displayName: this.formatDisplayName(entry.slug, entry.projectPath),
+      displayName: this._buildDisplayName(baseName, nameIndex),
+      nameIndex,
       projectPath: entry.projectPath,
       jsonlPath: entry.jsonlPath || (existingAgent ? existingAgent.jsonlPath : null),
       model: m('model'),
@@ -171,6 +181,9 @@ class AgentManager extends EventEmitter {
     this._releaseAvatarIndex(agent.avatarIndex);
     this.agents.delete(agentId);
 
+    // Remove from name group; if only one sibling remains, strip its index suffix
+    this._releaseNameIndex(agentId);
+
     // Refresh parent state when subagent is removed
     if (agent.parentId) {
       this.reEvaluateParentState(agent.parentId);
@@ -226,9 +239,9 @@ class AgentManager extends EventEmitter {
   }
 
   /**
-   * Determine display name
+   * Determine base display name (without index suffix)
    * 1. slug (e.g., "toasty-sparking-lecun" → "Toasty Sparking Lecun")
-   * 2. basename of projectPath (e.g., "pixel-agent-desk-master")
+   * 2. basename of projectPath (e.g., "pixel-agent-desk")
    * 3. Fallback: "Agent"
    */
   formatDisplayName(slug, projectPath) {
@@ -239,6 +252,65 @@ class AgentManager extends EventEmitter {
       return path.basename(projectPath);
     }
     return 'Agent';
+  }
+
+  /**
+   * Append #N suffix when multiple agents share the same base name.
+   * Single agents show no suffix; duplicates show #1, #2, etc.
+   */
+  _buildDisplayName(baseName, nameIndex) {
+    const group = this._nameGroups.get(baseName);
+    if (!group || group.length <= 1) return baseName;
+    return `${baseName} #${nameIndex}`;
+  }
+
+  /**
+   * Register a new agent in its name group and return its assigned index (1-based).
+   * If this is the second agent in the group, re-emit the first so it gains its #1 suffix.
+   */
+  _assignNameIndex(agentId, baseName) {
+    if (!this._nameGroups.has(baseName)) {
+      this._nameGroups.set(baseName, []);
+    }
+    const group = this._nameGroups.get(baseName);
+    const nameIndex = group.length + 1;
+    group.push({ agentId, nameIndex });
+
+    // When the 2nd agent arrives, update the first agent's displayName to show #1
+    if (group.length === 2) {
+      const firstEntry = group[0];
+      const firstAgent = this.agents.get(firstEntry.agentId);
+      if (firstAgent) {
+        firstAgent.displayName = `${baseName} #${firstEntry.nameIndex}`;
+        this.emit('agent-updated', this.getAgentWithEffectiveState(firstEntry.agentId));
+      }
+    }
+
+    return nameIndex;
+  }
+
+  /**
+   * Remove an agent from its name group.
+   * If the group drops to 1, strip the #N suffix from the surviving agent.
+   */
+  _releaseNameIndex(agentId) {
+    for (const [baseName, group] of this._nameGroups.entries()) {
+      const idx = group.findIndex(e => e.agentId === agentId);
+      if (idx === -1) continue;
+      group.splice(idx, 1);
+      if (group.length === 1) {
+        const survivorId = group[0].agentId;
+        const survivor = this.agents.get(survivorId);
+        if (survivor) {
+          survivor.displayName = baseName;
+          this.emit('agent-updated', this.getAgentWithEffectiveState(survivorId));
+        }
+      }
+      if (group.length === 0) {
+        this._nameGroups.delete(baseName);
+      }
+      break;
+    }
   }
 
   /**

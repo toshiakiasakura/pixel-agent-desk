@@ -3,7 +3,8 @@ const state = {
   agentHistory: new Map(),
   stats: { total: 0, active: 0, completed: 0, totalTokens: 0, totalCost: 0, errorCount: 0 },
   connected: false,
-  currentView: localStorage.getItem('mc-view') || 'office'
+  currentView: localStorage.getItem('mc-view') || 'office',
+  settings: null,
 };
 
 const DOM = {
@@ -220,8 +221,16 @@ function hitTestOfficeCharacter(canvas, event) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
-  const cx = (event.clientX - rect.left) * scaleX;
-  const cy = (event.clientY - rect.top) * scaleY;
+  // Convert screen → canvas pixels, then undo the zoom transform
+  const rawX = (event.clientX - rect.left) * scaleX;
+  const rawY = (event.clientY - rect.top) * scaleY;
+  const zoom = (typeof officeRenderer !== 'undefined' && officeRenderer.zoom) || 1.0;
+  const panX = (typeof officeRenderer !== 'undefined' && officeRenderer.panX) || 0;
+  const panY = (typeof officeRenderer !== 'undefined' && officeRenderer.panY) || 0;
+  const originX = canvas.width / 2;
+  const originY = canvas.height / 2;
+  const cx = originX + (rawX - panX - originX) / zoom;
+  const cy = originY + (rawY - panY - originY) / zoom;
 
   const chars = officeCharacters.getCharacterArray();
   // Reverse Y-sort: topmost (highest y) rendered last, so check first
@@ -268,14 +277,22 @@ function showOfficePopover(canvas, char) {
   `;
   popoverEl.style.display = 'block';
 
-  // Position near the character
+  // Position near the character, accounting for zoom transform
   const rect = canvas.getBoundingClientRect();
   const FW = (typeof OFFICE !== 'undefined' && OFFICE.FRAME_W) || 48;
   const FH = (typeof OFFICE !== 'undefined' && OFFICE.FRAME_H) || 64;
   const scaleX = rect.width / canvas.width;
   const scaleY = rect.height / canvas.height;
-  const screenX = rect.left + (char.x - FW / 2) * scaleX;
-  const screenY = rect.top + (char.y - FH) * scaleY;
+  const zoom = (typeof officeRenderer !== 'undefined' && officeRenderer.zoom) || 1.0;
+  const panX = (typeof officeRenderer !== 'undefined' && officeRenderer.panX) || 0;
+  const panY = (typeof officeRenderer !== 'undefined' && officeRenderer.panY) || 0;
+  const originX = canvas.width / 2;
+  const originY = canvas.height / 2;
+  // World → zoomed+panned canvas pixel → screen
+  const canvasX = originX + (char.x - FW / 2 - originX) * zoom + panX;
+  const canvasY = originY + (char.y - FH - originY) * zoom + panY;
+  const screenX = rect.left + canvasX * scaleX;
+  const screenY = rect.top + canvasY * scaleY;
 
   // Try to position above the character, fall back to below
   const popW = popoverEl.offsetWidth;
@@ -297,6 +314,57 @@ function hideOfficePopover() {
 function setupOfficeClickHandler() {
   const canvas = document.getElementById('office-canvas');
   if (!canvas) return;
+
+  // Zoom controls
+  document.getElementById('officeZoomIn')?.addEventListener('click', () => {
+    if (typeof officeRenderer !== 'undefined') officeRenderer.zoomIn();
+  });
+  document.getElementById('officeZoomOut')?.addEventListener('click', () => {
+    if (typeof officeRenderer !== 'undefined') officeRenderer.zoomOut();
+  });
+  document.getElementById('officeZoomReset')?.addEventListener('click', () => {
+    if (typeof officeRenderer !== 'undefined') officeRenderer.resetZoom();
+  });
+
+  // Mouse-wheel zoom on the canvas
+  canvas.addEventListener('wheel', (e) => {
+    if (typeof officeRenderer === 'undefined') return;
+    e.preventDefault();
+    if (e.deltaY < 0) officeRenderer.zoomIn();
+    else officeRenderer.zoomOut();
+  }, { passive: false });
+
+  // Click-drag panning
+  let isPanning = false;
+  let panStart = { x: 0, y: 0 };
+
+  canvas.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    isPanning = true;
+    panStart = { x: e.clientX, y: e.clientY };
+    canvas.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isPanning || typeof officeRenderer === 'undefined') return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    officeRenderer.pan(
+      (e.clientX - panStart.x) * scaleX,
+      (e.clientY - panStart.y) * scaleY
+    );
+    panStart = { x: e.clientX, y: e.clientY };
+  });
+
+  window.addEventListener('mouseup', (e) => {
+    if (e.button !== 0) return;
+    isPanning = false;
+    canvas.style.cursor = 'grab';
+  });
+
+  canvas.style.cursor = 'grab';
 
   canvas.addEventListener('click', (e) => {
     const char = hitTestOfficeCharacter(canvas, e);
@@ -575,6 +643,144 @@ function buildBars(data, colorClass, isMoney = false) {
   return `<div class="chart-box">${bars}</div>`;
 }
 
+// ─── SETTINGS ───
+const SETTINGS_FIELDS = [
+  { key: 'singleAgentWidth',  label: 'Single-agent Width',  desc: 'Window width when exactly one agent is active (px)',         min: 50,  max: 1000 },
+  { key: 'singleAgentHeight', label: 'Single-agent Height', desc: 'Window height when exactly one agent is active (px)',        min: 50,  max: 1000 },
+  { key: 'cardW',             label: 'Card Width',           desc: 'Width of each agent card in the overlay grid (px)',         min: 20,  max: 400  },
+  { key: 'gap',               label: 'Card Gap',             desc: 'Horizontal gap between agent cards (px)',                   min: 0,   max: 100  },
+  { key: 'outer',             label: 'Outer Padding',        desc: 'Total horizontal padding around the card grid (px)',       min: 0,   max: 400  },
+  { key: 'baseH',             label: 'Base Height',          desc: 'Window height per row in multi-agent layouts (px)',        min: 50,  max: 1000 },
+  { key: 'maxCols',           label: 'Max Columns',          desc: 'Maximum agent cards per row before wrapping to next row',  min: 1,   max: 30   },
+  { key: 'minWidth',          label: 'Minimum Width',        desc: 'Hard minimum overlay window width (px)',                   min: 50,  max: 1000 },
+  { key: 'satsPerRow',        label: 'Satellites Per Row',   desc: 'Sub-agent / teammate cards per row within a parent card', min: 1,   max: 10   },
+  { key: 'satRowH',           label: 'Satellite Row Height', desc: 'Height added per row of satellite agents (px)',            min: 10,  max: 200  },
+];
+
+async function loadSettings() {
+  try {
+    const r = await fetch('/api/settings');
+    state.settings = await r.json();
+    renderSettingsForm();
+  } catch (e) {
+    console.error('Settings load error:', e);
+  }
+}
+
+function renderSettingsForm() {
+  const form = document.getElementById('settingsForm');
+  if (!form || !state.settings) return;
+  form.innerHTML = SETTINGS_FIELDS.map(f => `
+    <div class="settings-field">
+      <label class="settings-label" for="sf-${f.key}">${f.label}</label>
+      <div class="settings-input-row">
+        <input
+          class="settings-input"
+          type="number"
+          id="sf-${f.key}"
+          name="${f.key}"
+          value="${state.settings[f.key]}"
+          min="${f.min}"
+          max="${f.max}"
+          step="1"
+        >
+        <span class="settings-input-unit">px</span>
+      </div>
+      <div class="settings-desc">${f.desc}</div>
+    </div>
+  `).join('');
+
+  form.addEventListener('input', updateSettingsPreview);
+  updateSettingsPreview();
+}
+
+function readFormValues() {
+  const values = {};
+  for (const f of SETTINGS_FIELDS) {
+    const el = document.getElementById(`sf-${f.key}`);
+    if (el) values[f.key] = parseInt(el.value, 10);
+  }
+  return values;
+}
+
+function updateSettingsPreview() {
+  const preview = document.getElementById('settingsPreview');
+  if (!preview) return;
+  const v = readFormValues();
+  const exampleCounts = [1, 2, 5, 10];
+  const rows = exampleCounts.map(n => {
+    let w, h;
+    if (n <= 1) {
+      w = v.singleAgentWidth || 150;
+      h = v.singleAgentHeight || 175;
+    } else {
+      const cols = Math.min(n, v.maxCols || 10);
+      w = Math.max(v.minWidth || 220, cols * (v.cardW || 80) + (cols - 1) * (v.gap || 10) + (v.outer || 100));
+      h = (v.baseH || 170);
+    }
+    return `<tr><td class="preview-n">${n} agent${n > 1 ? 's' : ''}</td><td class="preview-dim">${w} × ${h} px</td></tr>`;
+  }).join('');
+  preview.innerHTML = `
+    <div class="panel-header">Live Preview</div>
+    <div class="panel-body" style="padding:12px 16px">
+      <table class="preview-table"><tbody>${rows}</tbody></table>
+      <div class="settings-preview-note">Satellite rows add ${v.satRowH || 34}px per ${v.satsPerRow || 3} sub-agents</div>
+    </div>
+  `;
+}
+
+async function saveSettings() {
+  const values = readFormValues();
+  const btn = document.getElementById('settingsSaveBtn');
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(values),
+    });
+    const data = await r.json();
+    if (r.ok) {
+      state.settings = data.settings;
+      showSettingsStatus('Settings saved. Overlay window will resize on next agent change.', 'success');
+    } else {
+      showSettingsStatus(`Error: ${data.error}`, 'error');
+    }
+  } catch (e) {
+    showSettingsStatus('Network error saving settings.', 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function resetSettings() {
+  const btn = document.getElementById('settingsResetBtn');
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/settings/reset', { method: 'POST' });
+    const data = await r.json();
+    if (r.ok) {
+      state.settings = data.settings;
+      renderSettingsForm();
+      showSettingsStatus('Settings reset to defaults.', 'success');
+    } else {
+      showSettingsStatus(`Error: ${data.error}`, 'error');
+    }
+  } catch (e) {
+    showSettingsStatus('Network error resetting settings.', 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function showSettingsStatus(msg, type) {
+  const el = document.getElementById('settingsStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `settings-status ${type}`;
+  setTimeout(() => { el.textContent = ''; el.className = 'settings-status'; }, 4000);
+}
+
 // ─── NAV LOGIC ───
 document.querySelectorAll('.usage-btn').forEach(b => {
   b.onclick = () => {
@@ -600,6 +806,7 @@ document.querySelectorAll('.nav-item').forEach(b => {
 
     if (target === 'heatmap') renderHeatmapView();
     else if (target === 'usage') renderUsageView();
+    else if (target === 'settings') loadSettings();
   };
 });
 
@@ -656,6 +863,10 @@ function initApp() {
   connectSSE();
   if (target === 'heatmap') renderHeatmapView();
   else if (target === 'usage') renderUsageView();
+  else if (target === 'settings') loadSettings();
+
+  document.getElementById('settingsSaveBtn')?.addEventListener('click', saveSettings);
+  document.getElementById('settingsResetBtn')?.addEventListener('click', resetSettings);
 
   // We rely on standard office-init.js to boot the canvas logic
   if (typeof initOffice === 'function') setTimeout(() => {
