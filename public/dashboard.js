@@ -579,12 +579,20 @@ async function renderUsageView() {
   const days = historyState.data.days || {};
   const mode = historyState.mode;
 
+  const _win = new Date(); _win.setHours(0, 0, 0, 0);
+  if (mode === 'days')       _win.setDate(_win.getDate() - 11);
+  else if (mode === 'weeks') _win.setDate(_win.getDate() - 11 * 7);
+  else                       _win.setMonth(_win.getMonth() - 11);
+  const _startKey = _win.toISOString().slice(0, 10);
+
   let tTok = 0, tCost = 0, tTool = 0, tSes = 0;
-  Object.values(days).forEach(d => {
-    tTok += (d.inputTokens || 0) + (d.outputTokens || 0);
-    tCost += d.estimatedCost || 0;
-    tTool += d.toolUses || 0;
-    tSes += d.sessions || 0;
+  Object.entries(days).forEach(([k, d]) => {
+    if (k >= _startKey) {
+      tTok  += (d.inputTokens || 0) + (d.outputTokens || 0);
+      tCost += d.estimatedCost || 0;
+      tTool += d.toolUses || 0;
+      tSes  += d.sessions || 0;
+    }
   });
 
   document.getElementById('uTotalTokens').textContent = formatNum(tTok);
@@ -612,6 +620,13 @@ function aggChart(days, mode, valFn) {
       let c = new Date(ws);
       while (c <= we) { s += valFn(days[c.toISOString().slice(0, 10)] || {}); c.setDate(c.getDate() + 1); }
       res.push({ lbl: `W${12 - w}`, val: s });
+    }
+  } else if (mode === 'days') {
+    for (let d = 11; d >= 0; d--) {
+      const day = new Date(t); day.setDate(t.getDate() - d);
+      const key = day.toISOString().slice(0, 10);
+      const [, mo, dt] = key.split('-');
+      res.push({ lbl: `${parseInt(mo)}/${dt}`, val: valFn(days[key] || {}) });
     }
   } else {
     const mn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
